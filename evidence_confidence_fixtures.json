@@ -1,0 +1,61 @@
+[
+  {
+    "id": "high",
+    "items": [
+      {
+        "evidence_id": "a",
+        "source_type": "server_auth_log",
+        "integrity_verified": true,
+        "corroborating_sources": 2
+      },
+      {
+        "evidence_id": "t",
+        "source_type": "transaction_record",
+        "integrity_verified": true,
+        "freshness": 0.95,
+        "corroborating_sources": 1
+      }
+    ],
+    "quality": "HIGH",
+    "review": false
+  },
+  {
+    "id": "mixed",
+    "items": [
+      {
+        "evidence_id": "c",
+        "source_type": "carrier_metadata",
+        "integrity_verified": true
+      },
+      {
+        "evidence_id": "i",
+        "source_type": "ip_geolocation",
+        "integrity_verified": false,
+        "freshness": 0.8,
+        "contradictions": 1
+      }
+    ],
+    "quality": "LOW",
+    "review": true
+  },
+  {
+    "id": "weak",
+    "items": [
+      {
+        "evidence_id": "u",
+        "source_type": "unverified_claim",
+        "integrity_verified": false,
+        "freshness": 0.5,
+        "contradictions": 1
+      }
+    ],
+    "quality": "LOW",
+    "review": true
+  },
+  {
+    "id": "empty",
+    "items": [],
+    "quality": "LOW",
+    "review": true
+  }
+]

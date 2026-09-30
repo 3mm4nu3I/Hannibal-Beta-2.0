@@ -1,0 +1,16 @@
+# requirements.txt -- install these BEFORE running build.bat / pyinstaller
+#
+#   pip install -r requirements.txt
+#
+numpy
+pandas
+yfinance
+tzdata
+cryptography
+pyinstaller
+
+# Note on pyfiglet: NOT listed here on purpose. It was used once, offline,
+# to generate the ASCII login banner text, which is now hardcoded as a
+# plain string directly in hannibal_terminal.py -- the running terminal
+# (and the built .exe) has zero dependency on pyfiglet itself. Only needed
+# again if you want to regenerate/change the banner art.
