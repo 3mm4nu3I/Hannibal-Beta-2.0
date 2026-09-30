@@ -1,0 +1,13 @@
+{
+  "HANNIBAL_V11.py": "ebcfb551c9a9a416776c106dcdb31503919cafd9a7ae053bbee2ee11002c03b9",
+  "START_HANNIBAL_V11.bat": "c0880e2a8df65897423ac462ee96fab793cb34ad365c9299ad6e86c5cdb56046",
+  "START_HANNIBAL_V10.bat": "767d60c0b8a83083e2b0023e7b162a8adca60781233d6963f518dfda4ef00e47",
+  "HANNIBAL_V10.py": "ebcfb551c9a9a416776c106dcdb31503919cafd9a7ae053bbee2ee11002c03b9",
+  "README_V11.txt": "057820022dd7ea7ac461dd611b738fdd4970e3740756d38cb1a7b0dec453017b",
+  "start_hannibal_v10.sh": "e1238cdb261647a3e28071340a31fa2e9838d877cd50db7add9ddb0277178355",
+  "start_hannibal_v11.sh": "65e53e4385a9f58e56e8b6f506630cd3fa59c3e1f346cd2923e1b1c1a6f73675",
+  "README_V10.txt": "7cc4900e5c1d26abcfa512de125f098c589a53198b2115f2e9b12c81f54a18b7",
+  "core/hannibal_three_way_arbitration.py": "ca4538995d0dc4496aba8faf37c5602180e6b374d2611696dad3a579fc852e13",
+  "core/hannibal_intel_sqlite3.py": "ea5db04ec83bfa5f897d28fb96133ddae8150184a634cd73d56fab8700ef16af",
+  "core/market_catalog.py": "6f22996606e4f59504c43528df01664daa7c921b93a968f9a12b249efddf5974"
+}
