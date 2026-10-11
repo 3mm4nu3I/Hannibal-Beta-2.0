@@ -1,0 +1,18 @@
+--- a/hannibal_orbital.py
++++ b/hannibal_orbital.py
+@@ -740,6 +740,15 @@
+     ("Q", "Quit", None),
+ ]
+ 
++# --- Earth export (added 2026-10-11, see CHANGELOG.md of hannibal-satellite) ---------------------
++# Adds an [E] screen that writes KML for Google Earth and CZML for the Cesium globe. Guarded: if the
++# hannibal_sat package is not installed, this module behaves exactly as before.
++try:
++    from hannibal_sat.hannibal_bridge import register as _register_earth_export
++    _register_earth_export(MENU)
++except Exception:  # noqa: BLE001 - an optional add-on must never stop the orbital module loading
++    pass
++
+ 
+ def run_menu(input_fn=None, print_fn=print, color=None, animate=False, logins=None, home=None, secret_fn=None):
+     """Interactive menu loop. input_fn / print_fn are injectable so the menu is testable.

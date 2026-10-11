@@ -1,0 +1,20 @@
+{
+    "_note": "Edit the 'targets' list freely. Every id was checked against the SatNOGS DB on 2026-10-01 and was 'in orbit' at that time. You do not need to put credentials in this file: the Orbital Ops menu asks for the Space-Track password and the N2YO key once, hidden, and can remember them in your own user folder if you say yes. Or put them in hannibal_credentials.local.json, or set the SPACETRACK_USER / SPACETRACK_PASS / N2YO_API_KEY environment variables. Never put real credentials in this file: it is bundled into the .exe.",
+    "n2yo_api_key": "YOUR_N2YO_API_KEY",
+    "space_track_auth": {
+        "username": "YOUR_SPACETRACK_EMAIL",
+        "password": "YOUR_SPACETRACK_PASSWORD"
+    },
+    "satnogs": {
+        "lookback_hours": 24
+    },
+    "targets": [
+        {"id": 25544, "name": "ISS (ZARYA)", "type": "Amateur Radio / Habited"},
+        {"id": 39444, "name": "FUNcube-1 (AO-73)", "type": "Amateur Radio / Education"},
+        {"id": 39161, "name": "ESTCube-1", "type": "Educational / Estonian CubeSat"},
+        {"id": 40931, "name": "LAPAN-A2 (ORARI / IO-86)", "type": "Amateur Radio / Equatorial"},
+        {"id": 40069, "name": "METEOR M-2", "type": "Weather / LRPT"},
+        {"id": 7530,  "name": "OSCAR 7 (AO-7)", "type": "Amateur Radio / Linear Transponder"},
+        {"id": 24278, "name": "JAS-2 (FO-29)", "type": "Amateur Radio / Linear Transponder"}
+    ]
+}

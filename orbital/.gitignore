@@ -1,0 +1,21 @@
+# Private or machine-specific: never commit these.
+# your personal cranial profile (brain_profile.example.json ships instead)
+brain_profile.json
+# logs: the breach log holds IPs / phone numbers you logged
+hannibal_brain_audit.jsonl
+hannibal_breach_log.jsonl
+*.log
+# runtime output
+telemetry_report.json
+market_signals.json
+market_brain_state.json
+theorem_state.json
+# machine identity and credentials
+.hannibal_feeder_id
+hannibal_credentials.local.json
+# caches, builds, backups
+hannibal_cache/
+__pycache__/
+build/
+dist/
+*.bak

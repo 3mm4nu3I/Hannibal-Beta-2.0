@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CCCP Hannibal Satellite Tracking Suite</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050505; color: #00ff00; font-family: 'Courier New', Courier, monospace; }
+        #globe-canvas { display: block; width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        #ui-container {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 10;
+            width: 380px;
+            max-height: calc(100vh - 30px);
+            overflow-y: auto;
+            pointer-events: none;
+        }
+
+        .soviet-panel {
+            background: rgba(15, 25, 15, 0.88);
+            border: 2px solid #00ff00;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+            pointer-events: auto;
+        }
+
+        .soviet-header {
+            background: #8b0000;
+            color: #ffd700;
+            padding: 6px;
+            font-weight: bold;
+            text-align: center;
+            border: 1px solid #ffd700;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+
+        button, select {
+            background: #002200;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 6px 10px;
+            font-family: inherit;
+            font-size: 0.85em;
+            cursor: pointer;
+            margin: 3px 1px;
+            width: 100%;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        button:hover, select:hover {
+            background: #005500;
+            color: #ffffff;
+            box-shadow: 0 0 8px #00ff00;
+        }
+
+        .btn-group { display: flex; gap: 5px; margin-bottom: 5px; }
+
+        #progress-bar-container {
+            width: 100%;
+            background: #111;
+            border: 1px solid #00ff00;
+            height: 18px;
+            margin-top: 8px;
+            display: none;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: #00ff00;
+            text-align: center;
+            color: #000;
+            font-size: 0.75em;
+            font-weight: bold;
+            line-height: 18px;
+        }
+
+        table { border-collapse: collapse; width: 100%; font-size: 0.82em; margin-top: 5px; }
+        th, td { text-align: left; padding: 4px; border-bottom: 1px solid #004400; }
+        th { color: #ffd700; }
+
+        #transits-list {
+            max-height: 180px;
+            overflow-y: auto;
+            font-size: 0.8em;
+            border: 1px solid #005500;
+            padding: 5px;
+            background: rgba(0, 10, 0, 0.6);
+            display: none;
+        }
+        .transit-card {
+            border-bottom: 1px dashed #008800;
+            padding: 4px 0;
+        }
+        .transit-card:hover { background: rgba(0, 255, 0, 0.15); cursor: pointer; }
+
+        #banner { margin: 0 0 10px 0; padding: 8px; color: #ffd700; background: #3a0000; border: 2px solid #ffd700;
+                  font-size: 0.62em; line-height: 1.15; white-space: pre; overflow-x: auto; pointer-events: auto; }
+        #banner .red { color: #ff4040; }
+        .btn-group.wrap { flex-wrap: wrap; }
+        .btn-group.wrap button { width: auto; flex: 1 1 30%; }
+        label { font-size: 0.8em; color: #88cc88; }
+        .note { font-size: 0.78em; color: #ffd700; margin-top: 6px; }
+        .err { color: #ff4040; }
+        .dim { color: #668866; }
+        tr.soviet td { color: #ff4040; }
+        td.up { color: #00ff00; font-weight: bold; }
+        .scroll { max-height: 170px; overflow-y: auto; }
+        #ui-container { max-width: calc(100vw - 30px); }
+        .rowlink { cursor: pointer; padding: 2px 0; border-bottom: 1px dotted #004400; }
+        .rowlink:hover { background: rgba(0, 255, 0, 0.15); }
+        .rowlink .el { color: #00ff00; font-weight: bold; }
+        .sub { color: #ffd700; font-size: 0.78em; margin: 6px 0 2px 0; letter-spacing: 1px; }
+        input[type=text] { background: #002200; color: #00ff00; border: 1px solid #00ff00; padding: 5px 8px; font-family: inherit;
+                           font-size: 0.85em; width: 100%; box-sizing: border-box; margin: 3px 1px; }
+        .moonlist { margin: 2px 0 4px 12px; font-size: 0.9em; color: #88cc88; }
+        .ticker { font-size: 0.72em; color: #668866; text-align: center; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <canvas id="globe-canvas"></canvas>
+
+    <div id="ui-container">
+        <pre id="banner" aria-label="Project Hannibal orbital directorate banner"><span class="red">  ★ ═════════════════════════════════════════ ★</span>
+      ☭   P R O J E C T   H A N N I B A L   ☭
+          ORBITAL DIRECTORATE · ОРБИТА
+
+              ═══╲   ,-""-.   ╱═══
+                  ╲ ( ☭  ☭ ) ╱           СПУТНИК
+              ═══╱   `-..-'   ╲═══
+
+     ВПЕРЁД, К ЗВЁЗДАМ!       КОСМОС НАШ!
+   NASA/JPL · SPACE-TRACK · SATNOGS · BLUEGLOBE
+<span class="red">  ★ ═════════════════════════════════════════ ★</span></pre>
+
+        <!-- Control Panel -->
+        <div class="soviet-panel">
+            <div class="soviet-header">☭ CCCP SATELLITE TRACKER ☭</div>
+            <div>STATUS: <span id="status" style="color: #ffd700;">INITIALIZING...</span></div>
+            <div>LOADED TARGETS: <span id="sat-count">0</span></div>
+
+            <div style="margin-top: 8px;">
+                <label>CAMERA:</label>
+                <div class="btn-group wrap">
+                    <button id="btn-orbit">ORBIT</button>
+                    <button id="btn-home">HOME</button>
+                    <button id="btn-ground">GROUND</button>
+                    <button id="btn-pov">RIDE SAT</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 4px;">
+                <label>LOAD:</label>
+                <div class="btn-group wrap">
+                    <button id="btn-fleet">MY FLEET</button>
+                    <button id="btn-starlink">STARLINK</button>
+                    <button id="btn-planet">PLANET</button>
+                    <button id="btn-clear">CLEAR</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 4px;">
+                <label>PRESET MODE:</label>
+                <div class="btn-group">
+                    <button id="btn-rich">RICH</button>
+                    <button id="btn-data">DATA</button>
+                    <button id="btn-mobile">MOBILE</button>
+                </div>
+            </div>
+
+            <div style="margin-top: 6px;">
+                <label>COLOR FILTER:</label>
+                <select id="color-filter-select">
+                    <option value="constellation">CONSTELLATION</option>
+                    <option value="altitude">ALTITUDE</option>
+                    <option value="inclination">INCLINATION</option>
+                    <option value="orbit">ORBIT TYPE</option>
+                    <option value="hardware">HARDWARE</option>
+                </select>
+            </div>
+
+            <div style="margin-top: 8px;">
+                <button id="btn-calc-transits" style="background:#4a0000; color:#ffd700; border-color:#ffd700;">CALCULATE TRANSITS (7 DAYS)</button>
+                <div id="progress-bar-container">
+                    <div id="progress-bar">0%</div>
+                </div>
+            </div>
+            <div id="api-note" class="note" style="display:none;"></div>
+            <div class="ticker">ЗЕМЛЯ ★ ЗВЕЗДА ★ ЗЕМЛЯ</div>
+        </div>
+
+        <!-- Fleet Status Panel (works even if the globe cannot load) -->
+        <div class="soviet-panel" id="fleet-panel">
+            <div class="soviet-header">FLEET TELEMETRY</div>
+            <div id="fleet-empty" style="display:none; font-size:0.8em;">NO SCAN DATA YET &mdash; RUN run_telemetry.py OR PRESS [L] IN THE TERMINAL.</div>
+            <table>
+                <thead><tr><th>ID</th><th>NAME</th><th>SIGNAL</th><th>HEALTH</th></tr></thead>
+                <tbody id="fleet-body"></tbody>
+            </table>
+        </div>
+
+        <!-- Sky over home (NASA/JPL Horizons) -->
+        <div class="soviet-panel" id="sky-panel">
+            <div class="soviet-header" id="sky-title">SKY OVER HOME &middot; JPL HORIZONS</div>
+            <div id="sky-note" class="note dim">loading...</div>
+            <table>
+                <thead><tr><th>BODY</th><th>AZ</th><th>EL</th><th>MAG</th></tr></thead>
+                <tbody id="sky-body"></tbody>
+            </table>
+        </div>
+
+        <!-- Re-entry watch (Space-Track DECAY) -->
+        <div class="soviet-panel" id="decay-panel">
+            <div class="soviet-header">RE-ENTRY WATCH &middot; SPACE-TRACK</div>
+            <div id="decay-note" class="note dim">loading...</div>
+            <div class="scroll">
+                <table>
+                    <thead><tr><th>NORAD</th><th>OBJECT</th><th>DECAY (UTC)</th></tr></thead>
+                    <tbody id="decay-body"></tbody>
+                </table>
+            </div>
+            <div class="note dim">red = USSR / Russian Federation</div>
+        </div>
+
+        <!-- Military + Globalstar overhead (N2YO) -->
+        <div class="soviet-panel" id="above-panel">
+            <div class="soviet-header" id="above-title">ABOVE NOW &middot; N2YO</div>
+            <div id="above-note" class="note dim">loading...</div>
+            <div class="sub">MILITARY</div>
+            <div id="above-military" class="scroll" style="font-size:0.8em;"></div>
+            <div class="sub">GLOBALSTAR</div>
+            <div id="above-globalstar" class="scroll" style="font-size:0.8em;"></div>
+            <div class="btn-group wrap" style="margin-top:6px;">
+                <button id="btn-load-military">MILITARY ON GLOBE</button>
+                <button id="btn-load-globalstar">GLOBALSTAR ON GLOBE</button>
+            </div>
+            <div class="note dim">click a row to fly to it &middot; elevation from your home station</div>
+        </div>
+
+        <!-- Asteroid / comet / TNO satellites (JPL sb_sat) -->
+        <div class="soviet-panel" id="moons-panel">
+            <div class="soviet-header">ASTEROID MOONS &middot; JPL SB_SAT</div>
+            <div id="moons-note" class="note dim">loading...</div>
+            <select id="moons-class"><option value="">ALL CLASSES</option></select>
+            <input type="text" id="moons-text" placeholder="filter: name, number or moon" autocomplete="off" spellcheck="false">
+            <div id="moons-list" class="scroll" style="font-size:0.8em;"></div>
+        </div>
+
+        <!-- Breach log: inbound probes against this server, IP-geolocated -->
+        <div class="soviet-panel" id="breach-panel">
+            <div class="soviet-header">BREACH LOG &middot; PROBE IPs (COMPLIANCE)</div>
+            <div id="breach-note" class="note dim">loading...</div>
+            <div class="scroll" style="font-size:0.8em;">
+                <table>
+                    <thead><tr><th>TIME (UTC)</th><th>SOURCE IP</th><th>PHONE</th><th>KIND</th><th>LOCATION</th></tr></thead>
+                    <tbody id="breach-body"></tbody>
+                </table>
+            </div>
+            <div class="note dim">this page only binds 127.0.0.1 &mdash; full lookups (incl. phone-number metadata) are in the terminal's [I] menu</div>
+        </div>
+
+        <!-- In my sky (BlueGlobe) -->
+        <div class="soviet-panel" id="insky-panel" style="display:none;">
+            <div class="soviet-header">OVERHEAD NOW (&ge;10&deg;)</div>
+            <div id="insky-list" class="scroll" style="font-size:0.8em;"></div>
+        </div>
+
+        <!-- Transits Panel -->
+        <div class="soviet-panel" id="transits-panel" style="display:none;">
+            <div class="soviet-header">UPCOMING OVERHEAD PASSES (&ge;20&deg;)</div>
+            <div id="transits-list"></div>
+        </div>
+
+        <!-- Satellite Metadata HUD -->
+        <div class="soviet-panel" id="sat-hud" style="display:none;">
+            <div class="soviet-header">TARGET TELEMETRY LOCK</div>
+            <table>
+                <tr><th>NORAD ID</th><td id="hud-id">--</td></tr>
+                <tr><th>NAME</th><td id="hud-name">--</td></tr>
+                <tr><th>SIGNAL</th><td id="hud-status">--</td></tr>
+                <tr><th>PACKET HEALTH</th><td id="hud-health">--</td></tr>
+                <tr><th>TLE EPOCH</th><td id="hud-epoch">--</td></tr>
+                <tr><th>ALTITUDE</th><td id="hud-alt">--</td></tr>
+                <tr><th>VELOCITY</th><td id="hud-vel">--</td></tr>
+                <tr><th>FROM HOME</th><td id="hud-look">--</td></tr>
+                <tr><th>N2YO TLE</th><td id="hud-tle" style="font-size:0.72em; word-break:break-all;">--</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <script type="module">
+        // BlueGlobe is loaded dynamically so that a failure (offline, blocked, API change)
+        // is caught and every other panel keeps working without the globe.
+        // The docs show two forms; both are supported:
+        //   const { BlueGlobe } = await import(url);  new BlueGlobe(canvas, options)
+        //   import BlueGlobe from url;                new BlueGlobe({ canvas, ...options })
+        const BLUEGLOBE_URL = 'https://satellitemap.space/blueglobe.js';
+        const FALLBACK_NORADS = [25544, 39444, 39161, 40931, 40069, 7530, 24278];
+
+        let globe = null;
+        let selectedId = null;
+        let telemetryData = {};
+        let config = { apiKey: 'blueglobe-test', home: { lat: 0, lon: 0, name: 'Home Station' } };   // real location only ever comes from /config.json (HANNIBAL_HOME_*)
+        const missingApi = new Set();
+
+        const $ = (id) => document.getElementById(id);
+
+        function setStatus(text, color) {
+            $('status').textContent = text;
+            if (color) $('status').style.color = color;
+        }
+
+        function note(el, text, cls) {
+            el.textContent = text || '';
+            el.className = 'note ' + (cls || 'dim');
+            el.style.display = text ? 'block' : 'none';
+        }
+
+        // Call a globe method only if this version of the library has it; never throw.
+        async function call(name, ...args) {
+            if (!globe || typeof globe[name] !== 'function') {
+                if (globe) { missingApi.add(name); updateApiNote(); }
+                return undefined;
+            }
+            try {
+                return await globe[name](...args);
+            } catch (err) {
+                console.error(`BlueGlobe.${name} failed:`, err);
+                return undefined;
+            }
+        }
+
+        function updateApiNote() {
+            if (missingApi.size) {
+                note($('api-note'), 'Not available in this BlueGlobe build: ' + [...missingApi].join(', '), 'note');
+            }
+        }
+
+        async function getJson(url) {
+            const res = await fetch(url, { cache: 'no-store' });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        }
+
+        async function loadConfig() {
+            try {
+                const cfg = await getJson('./config.json');
+                config = { ...config, ...cfg, home: { ...config.home, ...(cfg.home || {}) } };
+            } catch (e) { /* defaults are fine */ }
+        }
+
+        async function loadReport() {
+            telemetryData = {};
+            try {
+                const report = await getJson('./telemetry_report.json');
+                if (Array.isArray(report)) report.forEach(item => { telemetryData[item['NORAD ID']] = item; });
+            } catch (e) {
+                console.warn('Local telemetry report not loaded; using fallback targets.', e);
+            }
+        }
+
+        const STATUS_COLORS = { 'ONLINE': '#00ff00', 'INTERMITTENT': '#ffd700', 'OFFLINE': '#ff4040',
+                                'NO PASSES': '#999999', 'UNVETTED': '#999999', 'LINK ERROR': '#ff4040',
+                                'LOW SAMPLE': '#999999', 'STATION FAULT': '#999999' };
+
+        // Table helper: textContent only, so API data is never interpreted as HTML.
+        function fillRows(tbody, rows, cellsOf, rowClass) {
+            tbody.replaceChildren();
+            rows.forEach(item => {
+                const tr = document.createElement('tr');
+                const cls = rowClass ? rowClass(item) : '';
+                if (cls) tr.className = cls;
+                cellsOf(item).forEach(c => {
+                    const td = document.createElement('td');
+                    td.textContent = c.text == null ? '' : String(c.text);
+                    if (c.color) td.style.color = c.color;
+                    if (c.cls) td.className = c.cls;
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderFleet() {
+            const rows = Object.values(telemetryData);
+            $('fleet-empty').style.display = rows.length ? 'none' : 'block';
+            fillRows($('fleet-body'), rows, item => [
+                { text: item['NORAD ID'] }, { text: item['Target Name'] },
+                { text: item['Status'], color: STATUS_COLORS[item['Status']] || '#999999' },  // unknown label is never green
+                { text: item['Packet Health'] },
+            ]);
+        }
+
+        const fmt = (v, d = 1, suffix = '') => (v === null || v === undefined || Number.isNaN(Number(v))) ? '--' : Number(v).toFixed(d) + suffix;
+
+        async function loadSky() {
+            try {
+                const d = await getJson('./api/sky.json');
+                $('sky-title').textContent = 'SKY OVER ' + String((d.home && d.home.name) || 'HOME').toUpperCase() + ' \u00b7 JPL HORIZONS';
+                fillRows($('sky-body'), d.rows || [], r => [
+                    { text: r.name }, { text: fmt(r.az, 0, '\u00b0') + ' ' + (r.dir || '') },
+                    { text: fmt(r.el, 1, '\u00b0'), cls: r.up ? 'up' : '' }, { text: fmt(r.mag, 1) },
+                ]);
+                const errs = (d.errors || []).join('; ');
+                note($('sky-note'), errs ? 'Partial data: ' + errs : 'as of ' + (d.as_of || 'n/a') + ' UT \u00b7 green = above horizon', errs ? 'note err' : 'note dim');
+            } catch (e) {
+                note($('sky-note'), 'Sky data unavailable (' + e.message + ')', 'note err');
+            }
+        }
+
+        async function loadDecay() {
+            try {
+                const d = await getJson('./api/decay.json');
+                fillRows($('decay-body'), d.rows || [], r => [
+                    { text: r.norad }, { text: r.name }, { text: r.decay_epoch },
+                ], r => r.soviet ? 'soviet' : '');
+                if (d.error) note($('decay-note'), d.error, 'note err');
+                else if (d.note) note($('decay-note'), d.note, 'note');
+                else note($('decay-note'), (d.rows || []).length ? '' : 'No predicted decays in the window.', 'note dim');
+            } catch (e) {
+                note($('decay-note'), 'Re-entry data unavailable (' + e.message + ')', 'note err');
+            }
+        }
+
+        // ---- N2YO: Military + Globalstar above the home station -------------------------------------
+        let aboveData = { military: { rows: [] }, globalstar: { rows: [] }, configured: false };
+        let n2yoReady = false;
+        let aboveReady = Promise.resolve();
+
+        function renderAboveList(boxId, block) {
+            const box = $(boxId);
+            box.replaceChildren();
+            const rows = (block && block.rows) || [];
+            if (!rows.length) {
+                const empty = document.createElement('div');
+                empty.className = 'dim';
+                empty.textContent = (block && block.error) ? block.error : 'none above the horizon';
+                box.appendChild(empty);
+                return;
+            }
+            rows.slice(0, 40).forEach(r => {
+                const row = document.createElement('div');
+                row.className = 'rowlink';
+                const el = document.createElement('span');
+                el.className = 'el';
+                el.textContent = fmt(r.el, 0, '\u00b0') + ' ' + (r.dir || '');
+                row.append(`${r.norad}  ${r.name}  `, el);
+                row.title = `alt ${fmt(r.alt_km, 0, ' km')} \u00b7 ground ${r.distance_km} km`;
+                row.onclick = () => flyTo(r.norad);
+                box.appendChild(row);
+            });
+        }
+
+        async function flyTo(id) {
+            id = Number(id);
+            if (!Number.isInteger(id) || id <= 0) return;
+            await call('loadSatellites', [id]);
+            await call('focusSatellite', id);
+            refreshCount();
+        }
+
+        async function loadAbove() {
+            try {
+                aboveData = await getJson('./api/above.json');
+            } catch (e) {
+                note($('above-note'), 'N2YO data unavailable (' + e.message + ')', 'note err');
+                return;
+            }
+            n2yoReady = !!aboveData.configured;
+            const home = (aboveData.home && aboveData.home.name) || 'HOME';
+            $('above-title').textContent = 'ABOVE ' + String(home).toUpperCase() + ' NOW \u00b7 N2YO';
+            if (!aboveData.configured) {
+                note($('above-note'), 'No N2YO API key yet \u2014 press [V] in the terminal and choose [K] to type it (kept in memory only).', 'note');
+            } else {
+                const m = aboveData.military || {}, g = aboveData.globalstar || {};
+                const err = m.error || g.error;
+                note($('above-note'), err ? err : `${m.count || 0} military \u00b7 ${g.count || 0} Globalstar above the horizon`, err ? 'note err' : 'note dim');
+            }
+            renderAboveList('above-military', aboveData.military);
+            renderAboveList('above-globalstar', aboveData.globalstar);
+        }
+
+        function aboveIds(which) {
+            const block = (aboveData && aboveData[which]) || {};
+            return (block.rows || []).map(r => Number(r.norad)).filter(n => Number.isInteger(n) && n > 0).slice(0, 50);
+        }
+
+        async function loadAboveOnGlobe(which) {
+            const ids = aboveIds(which);
+            if (!ids.length) { note($('api-note'), 'Nothing above the horizon in that group right now.', 'note'); return; }
+            await call('loadSatellites', ids);
+            refreshCount();
+        }
+
+        // ?norad=25544,39444 loads those satellites too (digits only, at most 50)
+        function noradsFromQuery() {
+            let raw = '';
+            try { raw = new URLSearchParams(window.location.search).get('norad') || ''; } catch (e) { return []; }
+            return raw.split(',').map(x => x.trim()).filter(x => /^[0-9]{1,9}$/.test(x)).map(Number).filter(n => n > 0).slice(0, 50);
+        }
+
+        // ---- JPL sb_sat: every small body with satellites -------------------------------------------
+        let moonsData = [];
+
+        function renderMoons() {
+            const cls = $('moons-class').value;
+            const q = $('moons-text').value.trim().toLowerCase();
+            const box = $('moons-list');
+            box.replaceChildren();
+            const hits = moonsData.filter(b => (!cls || b['class'] === cls) &&
+                (!q || String(b.name).toLowerCase().includes(q) || String(b.pdes).toLowerCase() === q ||
+                 (b.moons || []).some(m => String(m.name).toLowerCase().includes(q))));
+            hits.slice(0, 60).forEach(b => {
+                const row = document.createElement('div');
+                row.className = 'rowlink';
+                row.textContent = `${b.name}  [${b['class']}]  ${(b.moons || []).length} moon${(b.moons || []).length === 1 ? '' : 's'}`;
+                const detail = document.createElement('div');
+                detail.className = 'moonlist';
+                detail.style.display = 'none';
+                detail.textContent = (b.moons || []).map(m => m.name +
+                    (m.period_d ? ` (P ${fmt(m.period_d, 2)} d, a ${fmt(m.a_km, 0)} km)` : '')).join('; ');
+                row.onclick = () => { detail.style.display = detail.style.display === 'none' ? 'block' : 'none'; };
+                box.append(row, detail);
+            });
+            if (!hits.length) {
+                const empty = document.createElement('div');
+                empty.className = 'dim';
+                empty.textContent = 'no body matches';
+                box.appendChild(empty);
+            } else if (hits.length > 60) {
+                const more = document.createElement('div');
+                more.className = 'dim';
+                more.textContent = `showing 60 of ${hits.length} \u2014 type to narrow`;
+                box.appendChild(more);
+            }
+        }
+
+        // ---- Breach log: probes against this server, IP-geolocated by the server -------------------
+        async function loadBreach() {
+            try {
+                const d = await getJson('./api/breach.json');
+                fillRows($('breach-body'), d.entries || [], r => {
+                    const g = r.geo || {};
+                    const pm = r.phone_meta || {};
+                    const where = [g.city, g.region, g.country].filter(Boolean).join(', ') || g.note || g.error || '';
+                    const phone = (pm.e164 || r.phone || '-') + (pm.line_type ? ` (${pm.line_type})` : '');
+                    const kind = r.kind + (r.count > 1 ? ' ×' + r.count : '');
+                    return [{ text: r.ts }, { text: r.ip || '-' }, { text: phone }, { text: kind }, { text: where }];
+                });
+                if (d.error) note($('breach-note'), d.error, 'note err');
+                else note($('breach-note'), `${d.count} total · showing last ${(d.entries || []).length}`, 'note dim');
+            } catch (e) {
+                note($('breach-note'), 'Breach log unavailable (' + e.message + ')', 'note err');
+            }
+        }
+
+        async function loadMoons() {
+            try {
+                const d = await getJson('./api/moons.json');
+                if (d.error) { note($('moons-note'), d.error, 'note err'); return; }
+                moonsData = d.bodies || [];
+                note($('moons-note'), `${d.moons} known satellites around ${moonsData.length} bodies` + (d.note ? ' \u00b7 ' + d.note : ''), 'note dim');
+                const counts = {};
+                moonsData.forEach(b => { counts[b['class']] = (counts[b['class']] || 0) + 1; });
+                const sel = $('moons-class');
+                Object.keys(counts).sort((a, b) => counts[b] - counts[a]).forEach(c => {
+                    const o = document.createElement('option');
+                    o.value = c;
+                    o.textContent = `${c} (${counts[c]})`;
+                    sel.appendChild(o);
+                });
+                renderMoons();
+            } catch (e) {
+                note($('moons-note'), 'Moon data unavailable (' + e.message + ')', 'note err');
+            }
+        }
+
+        function sizeCanvas() {
+            const canvas = $('globe-canvas');
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = window.innerWidth * dpr;
+            canvas.height = window.innerHeight * dpr;
+        }
+
+        async function createGlobe() {
+            const mod = await import(BLUEGLOBE_URL);
+            const BlueGlobe = mod.BlueGlobe || mod.default;
+            if (typeof BlueGlobe !== 'function') throw new Error('blueglobe.js has no BlueGlobe export');
+            const canvas = $('globe-canvas');
+            const options = { apiKey: config.apiKey, apiBaseUrl: 'https://api.satellitemap.space',
+                              assetsBaseUrl: 'https://satellitemap.space', compactMode: true, maxLabels: 15,
+                              enableTrails: true };
+            let instance;
+            try {
+                instance = new BlueGlobe(canvas, options);          // canvas-first form
+            } catch (e) {
+                instance = new BlueGlobe({ canvas, ...options });   // single-options-object form
+            }
+            await instance.init();
+            return instance;
+        }
+
+        let fleetIds = FALLBACK_NORADS;
+
+        async function loadFleet() {
+            await call('clearSatellites');
+            await call('loadSatellites', fleetIds);
+            await refreshCount();
+        }
+
+        async function refreshCount() {
+            const sats = await call('getSatellites');
+            if (sats && typeof sats.length === 'number') $('sat-count').textContent = String(sats.length);
+        }
+
+        async function initApp() {
+            sizeCanvas();
+            wireButtons();
+            await loadConfig();
+            await loadReport();
+            renderFleet();
+            loadSky();
+            loadDecay();
+            aboveReady = loadAbove();
+            loadMoons();
+            loadBreach();
+            setInterval(loadSky, 10 * 60 * 1000);       // server caches these; the page just re-reads
+            setInterval(loadDecay, 60 * 60 * 1000);
+            setInterval(loadAbove, 5 * 60 * 1000);      // N2YO "above" is cached for 5 min server-side
+            setInterval(loadBreach, 2 * 60 * 1000);     // local log -- cheap to re-poll
+
+            const ids = Object.keys(telemetryData).map(Number);
+            fleetIds = ids.length ? ids : FALLBACK_NORADS;
+            $('sat-count').textContent = String(fleetIds.length);
+
+            setStatus('LOADING BLUEGLOBE...', '#ffd700');
+            try {
+                globe = await createGlobe();
+            } catch (err) {
+                console.error('BlueGlobe failed to start:', err);
+                globe = null;
+                setStatus('GLOBE OFFLINE - DATA PANELS ACTIVE', '#ff4040');
+                note($('api-note'), 'BlueGlobe could not start (' + (err && err.message ? err.message : err) +
+                    '). Check your internet connection and the BLUEGLOBE_API_KEY environment variable ' +
+                    '(your origin must also be whitelisted for that key).', 'note err');
+                return;
+            }
+
+            if (typeof globe.on === 'function') {
+                globe.on('pick', onPick);
+                globe.on('loading', (e) => {
+                    if (e && e.loading) setStatus('LOADING ' + String(e.constellation || 'SATELLITES').toUpperCase() + '...', '#ffd700');
+                    else setStatus('SYSTEM ONLINE (ACTIVE LINK)', '#00ff00');
+                });
+            } else {
+                missingApi.add('on'); updateApiNote();
+            }
+
+            await call('setHome', { lat: config.home.lat, lon: config.home.lon }, config.home.name);
+            setPresentationMode();
+            setStatus('LOADING TELEMETRY...', '#ffd700');
+            await loadFleet();
+            // main window: the military and Globalstar satellites above you are on the globe from the start
+            await aboveReady;
+            await loadAboveOnGlobe('military');
+            await loadAboveOnGlobe('globalstar');
+            const wanted = noradsFromQuery();
+            if (wanted.length) {
+                await call('loadSatellites', wanted);
+                await call('focusSatellite', wanted[0]);
+                note($('api-note'), `Loaded ${wanted.length} satellite(s) from the link.`, 'note dim');
+            }
+            refreshCount();
+            setStatus('SYSTEM ONLINE (ACTIVE LINK)', '#00ff00');
+            refreshInSky();
+            setInterval(refreshInSky, 30 * 1000);
+        }
+
+        async function refreshInSky() {
+            const list = await call('getInMySky', 10);
+            const panel = $('insky-panel'), box = $('insky-list');
+            if (!Array.isArray(list) || !list.length) { panel.style.display = 'none'; return; }
+            panel.style.display = 'block';
+            box.replaceChildren();
+            list.slice(0, 40).forEach(s => {
+                const row = document.createElement('div');
+                const id = s.noradId ?? s.norad_id ?? s.id ?? '';
+                const el = s.elevation ?? s.el;
+                row.textContent = `${id}  ${s.name || ''}` + (el !== undefined ? `  ${fmt(el, 0, '\u00b0')}` : '');
+                row.style.cursor = 'pointer';
+                row.onclick = () => id && call('focusSatellite', Number(id));
+                box.appendChild(row);
+            });
+        }
+
+        async function onPick(event) {
+            const hud = $('sat-hud');
+            if (event && event.action === 'picked') {
+                selectedId = Number(event.id);
+                hud.style.display = 'block';
+                $('hud-id').textContent = event.id;
+                $('hud-name').textContent = event.name;
+                const data = telemetryData[event.id];
+                $('hud-status').textContent = data ? data['Status'] : 'NOT SCANNED';
+                $('hud-health').textContent = data ? data['Packet Health'] : 'N/A';
+                $('hud-epoch').textContent = data ? (data['TLE Epoch'] + (data['TLE Stale'] ? ' (STALE)' : '')) : 'LIVE TLE';
+                $('hud-alt').textContent = '--';
+                $('hud-vel').textContent = '--';
+                $('hud-look').textContent = '--';
+                $('hud-tle').textContent = '--';
+                const detail = await call('getSatelliteDetail', Number(event.id));
+                if (detail && selectedId === Number(event.id)) {
+                    $('hud-alt').textContent = fmt(detail.altitude_km, 0, ' km');
+                    $('hud-vel').textContent = fmt(detail.velocity_kmh, 0, ' km/h');
+                }
+                enrichHud(Number(event.id));
+            } else {
+                selectedId = null;
+                hud.style.display = 'none';
+            }
+        }
+
+        // N2YO: where the picked satellite is from your home station, and its current TLE (uses the key you typed)
+        async function enrichHud(id) {
+            if (!n2yoReady || !Number.isInteger(id) || id <= 0) return;
+            try {
+                const d = await getJson('./api/sat/' + id + '.json');
+                if (selectedId !== id) return;
+                const p = d.position;
+                if (p) {
+                    $('hud-look').textContent = `az ${fmt(p.az, 0, '\u00b0')} \u00b7 el ${fmt(p.el, 1, '\u00b0')}` + (p.up ? ' \u00b7 ABOVE HORIZON' : '');
+                    if ($('hud-alt').textContent === '--') $('hud-alt').textContent = fmt(p.alt_km, 0, ' km');
+                }
+                if (d.tle && d.tle.line1) $('hud-tle').textContent = d.tle.line1 + ' ' + d.tle.line2;
+            } catch (e) { /* the HUD simply keeps its placeholders */ }
+        }
+
+        function wireButtons() {
+            $('btn-rich').onclick = setPresentationMode;
+            $('btn-data').onclick = setDataAnalyticsMode;
+            $('btn-mobile').onclick = setMobileMode;
+            $('color-filter-select').onchange = (e) => call('setColorFilter', e.target.value);
+            $('btn-calc-transits').onclick = calculateTransits;
+            $('btn-orbit').onclick = () => call('focusGlobe');
+            $('btn-home').onclick = () => call('focusHome');
+            $('btn-ground').onclick = () => call('landHome');
+            $('btn-pov').onclick = () => {
+                if (selectedId) call('povSatellite', selectedId);
+                else note($('api-note'), 'Click a satellite first, then RIDE SAT.', 'note');
+            };
+            $('btn-fleet').onclick = loadFleet;
+            $('btn-starlink').onclick = async () => { await call('loadConstellation', 'starlink'); refreshCount(); };
+            $('btn-planet').onclick = async () => { await call('loadConstellation', 'planet'); refreshCount(); };
+            $('btn-clear').onclick = async () => { await call('clearSatellites'); refreshCount(); };
+            $('btn-load-military').onclick = () => loadAboveOnGlobe('military');
+            $('btn-load-globalstar').onclick = () => loadAboveOnGlobe('globalstar');
+            $('moons-class').onchange = renderMoons;
+            $('moons-text').oninput = renderMoons;
+        }
+
+        // Preset 1: Presentation Mode
+        function setPresentationMode() {
+            call('setVisuals', { labels: 1, lighting: true, latlon: false, clouds: true,
+                                 borders: 1, skybox: 1, style: 1, rotating: 1 });
+        }
+
+        // Preset 2: Data Analytics Mode
+        function setDataAnalyticsMode() {
+            call('setVisuals', { labels: 1, lighting: false, latlon: true, clouds: false,
+                                 borders: 1, skybox: 0, footprints: true, style: 0 });
+            call('setColorFilter', 'altitude');
+        }
+
+        // Preset 3: Mobile Mode
+        function setMobileMode() {
+            call('setVisuals', { labels: 2, clouds: false, latlon: false, skybox: 0, satScale: 1.5 });
+        }
+
+        // Transit Calculation Engine
+        async function calculateTransits() {
+            const pContainer = $('progress-bar-container');
+            const pBar = $('progress-bar');
+            const transitsPanel = $('transits-panel');
+            const transitsList = $('transits-list');
+
+            if (!globe || typeof globe.calculateTransitsForAllSatellites !== 'function') {
+                if (globe) { missingApi.add('calculateTransitsForAllSatellites'); updateApiNote(); }
+                return;
+            }
+
+            pContainer.style.display = 'block';
+            pBar.style.width = '0%';
+            pBar.textContent = '0%';
+
+            try {
+                // 7 days, minimum 20 degrees elevation; callback is (progress, current, total, noradId)
+                const transits = await globe.calculateTransitsForAllSatellites(7, 20, (progress, current, total) => {
+                    const pct = Math.max(0, Math.min(100, Math.round(progress <= 1 ? progress * 100 : progress)));
+                    pBar.style.width = `${pct}%`;
+                    pBar.textContent = `${pct}% (${current}/${total})`;
+                });
+
+                transitsList.replaceChildren();
+                let totalPasses = 0;
+
+                for (const noradId in (transits || {})) {
+                    const passes = Array.isArray(transits[noradId]) ? transits[noradId] : [transits[noradId]];
+                    passes.filter(Boolean).forEach(pass => {
+                        totalPasses++;
+                        const card = document.createElement('div');
+                        card.className = 'transit-card';
+                        const strong = document.createElement('strong');
+                        strong.textContent = `NORAD ${noradId}`;
+                        const elev = document.createElement('strong');
+                        elev.textContent = `${Number(pass.maxElevation).toFixed(1)}\u00b0`;
+                        const small = document.createElement('small');
+                        small.textContent = `Start: ${new Date(pass.start).toLocaleString()} | Dur: ${pass.duration}s`;
+                        card.append(strong, ' | Max Elev: ', elev, document.createElement('br'), small);
+
+                        card.onclick = async () => {
+                            const saved = await call('previewPass', {
+                                startTimeMs: new Date(pass.start).getTime(),
+                                noradIds: [parseInt(noradId, 10)],
+                                startElevation: 10
+                            });
+                            setTimeout(() => call('restoreState', saved), pass.duration * 1000);
+                        };
+                        transitsList.appendChild(card);
+                    });
+                }
+
+                pContainer.style.display = 'none';
+                transitsPanel.style.display = 'block';
+                transitsList.style.display = 'block';
+
+                if (totalPasses === 0) {
+                    transitsList.textContent = 'No passes \u226520\u00b0 detected over next 7 days.';
+                }
+                await call('terminateCalculationWorker');
+            } catch (err) {
+                console.error('Transit calculation failed:', err);
+                pContainer.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('resize', sizeCanvas);
+        window.onload = initApp;
+    </script>
+</body>
+</html>

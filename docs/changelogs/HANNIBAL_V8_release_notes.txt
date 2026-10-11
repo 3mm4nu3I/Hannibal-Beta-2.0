@@ -1,0 +1,1 @@
+Portable V8 restores the original full terminal including kinetic headlines and prediction UI, plus hannibal_v8_kinetic_prediction.py for bounded kinetic recalculation and calibrated forecasts. Models must be fitted from real data; otherwise outputs are UNCALIBRATED.

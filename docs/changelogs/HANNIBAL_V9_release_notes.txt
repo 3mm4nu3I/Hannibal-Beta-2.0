@@ -1,0 +1,2 @@
+HANNIBAL V9 PORTABLE
+Retains V8 kinetic/prediction and adds maritime delays, straits, canals, ports, pipelines, LNG, rail and air cargo. No real events, endpoints, topology or fitted coefficients are bundled.

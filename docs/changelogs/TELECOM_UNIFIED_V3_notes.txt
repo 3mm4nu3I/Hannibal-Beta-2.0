@@ -1,0 +1,20 @@
+HANNIBAL UNIFIED TELECOM v3
+
+Combines v1 feature explorer and v2 defensive build.
+
+Included:
+- Single lookup and raw JSON
+- Batch verification and export
+- Cache and audit trail
+- Security Operations dashboard
+- Threat Model
+- Evidence Case Files with SHA-256 integrity
+- Risk scoring and expected-country mismatch
+- Numbering-plan geolocation tab
+- Node/engine health
+
+GEOLOCATION LIMITATION
+Veriphone returns country and phone_region metadata. This is approximate numbering-plan geography only. It cannot reveal GPS coordinates, a live handset position, cell-tower location, IP location, or whether the device is switched on.
+
+Run START_HANNIBAL_UNIFIED_TELECOM.bat or python hannibal_unified_telecom.py.
+The existing working key is included. Keep this private.
