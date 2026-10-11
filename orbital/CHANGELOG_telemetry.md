@@ -1,7 +1,40 @@
 # Changelog — orbital telemetry link health
 
-All Hannibal work is logged here: what changed, why, and what was and was not verified. Newest first.
-Mirrors: local project folder, Google Drive, GitHub (Hannibal-Beta-2.0), OneDrive.
+## [telemetry 1.2.0] - 2026-10-11 — bad connections
+
+Same `patch_telemetry.py`, now version 1.2.0. On a fresh file it applies everything; on a file already patched with 1.1.0 it upgrades in place. Both routes give byte-identical results. The `.bak` from the first run (the original) is kept, so `--revert` still goes back to the unpatched files.
+
+### Changed — run_telemetry.py
+- **Split timeouts:** 10 s to connect, 30 s between chunks of data (was 15 s for everything). A slow link no longer cuts the SatNOGS reply off half-way.
+- **Retries:** a timeout, dropped connection (including a reply cut off mid-download), 429 or 5xx is retried twice, after 3 s and then 8 s. A server's `Retry-After` is honoured, up to 30 s. A 404 or other client error fails at once with no retry.
+- **Last known value instead of LINK ERROR:** when a satellite can't be fetched, its previous result from `telemetry_report.json` is kept and marked with `*` (e.g. `78% 64/82 [68-86]*`). Rows carry `From Cache`. The `*` never stacks up across failed scans. With nothing cached, it shows LINK ERROR as before.
+- **Offline short-cut:** after 2 satellites in a row fail at the network level, the rest are skipped and filled from the cache instead of each timing out in turn. A dead link now costs about 80 s instead of several minutes.
+- Unchanged: if every satellite fails, the previous report file is left untouched (`write_report` returns False), exactly as before.
+- New constants at the top: `CONNECT_TIMEOUT`, `READ_TIMEOUT`, `RETRIES`, `BACKOFF`, `OFFLINE_AFTER`.
+
+### Changed — hannibal_orbital.py
+- [L] footer explains the `*` marker.
+
+### Why
+Slow, dropping connection in Antwerp: one timeout used to turn a satellite into LINK ERROR and threw away a perfectly good earlier reading, and a dead link meant waiting through every satellite's timeout.
+
+### Verified
+- Fresh apply: 12 of 12 anchors patched, self-test all pass.
+- Upgrade 1.1.0 → 1.2.0: 4 anchors upgraded, 1 new, the rest already applied; result byte-identical to a fresh 1.2.0 apply.
+- Re-apply is a no-op; `--revert` restores the originals byte for byte.
+- Simulated networks (mocked SatNOGS session, sleeps recorded instead of waited):
+  1. good link: 7 calls, 0 errors
+  2. every first attempt times out: 14 calls, 0 errors, correct statuses
+  3. 429 with Retry-After 5: waited 5 s, 0 errors
+  4. 404: 7 calls, no retries, all rows from cache
+  5. link down: 6 calls (2 satellites × 3 attempts), rest skipped, all 7 rows from cache with `*`, old report file kept
+  6. one satellite down: that row from cache, report written, `*` doesn't stack on a second failure
+
+### Not verified
+- Not run on the real Antwerp connection or live SatNOGS from here.
+- Space-Track has its own cache and limits in hannibal_spacetrack.py and was not changed.
+- A row from cache shows the old reading; how old is only visible as the report's age in the [L] screen, not per row.
+
 
 ## [telemetry 1.1.0] - 2026-10-11
 

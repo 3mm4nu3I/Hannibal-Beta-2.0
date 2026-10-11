@@ -32,6 +32,20 @@ WHAT CHANGES AND WHY
    flagged "Truncated": its health came from a partial window.
 6. Only good+bad == 0 with failures present -> STATION FAULT (was OFFLINE-ish
    or NO PASSES depending on path).
+
+1.2.0 - BAD CONNECTIONS (slow / dropping mobile or public Wi-Fi)
+7. Timeouts split into connect 10 s / read 30 s (was 15 s for everything), so
+   a slow trickle of JSON is no longer cut off half-way.
+8. Retries: a timeout, dropped connection, 429 or 5xx is retried twice, after
+   3 s then 8 s (a server's Retry-After is honoured, capped at 30 s).
+9. Last known value: when a satellite can't be fetched, its previous result
+   from telemetry_report.json is kept and marked with * instead of LINK ERROR.
+   Rows carry "From Cache". If nothing was cached, LINK ERROR as before.
+10. Offline short-cut: after 2 satellites in a row fail at the network level,
+   the rest are skipped (and filled from the cache) instead of each one
+   timing out in turn. A dead link costs about 80 s, not minutes.
+Upgrades a file already patched with 1.1.0 in place; a fresh file goes
+straight to 1.2.0.
 """
 
 from __future__ import annotations
@@ -47,7 +61,7 @@ RT_IMPORT_OLD = "import json\nimport os\n"
 RT_IMPORT_NEW = "import json\nimport math\nimport os\n"
 
 RT_CONST_OLD = "HTTP_TIMEOUT = 15\n"
-RT_CONST_NEW = '''HTTP_TIMEOUT = 15
+RT_CONST_NEW_V11 = '''HTTP_TIMEOUT = 15
 
 # Link-health evidence gate (patch_telemetry 2026-10-11). See classify().
 MIN_SAMPLE = 8          # vetted observations needed before a verdict is issued
@@ -57,6 +71,15 @@ CONFIDENT = 0.50        # the 95% interval must sit on the right side of 50%
 WILSON_Z = 1.96         # 95% two-sided
 STALE_TLE_DAYS = 14     # older element sets are flagged; SGP4 error grows with age
 _TRUNCATED = set()      # NORAD ids whose last fetch hit MAX_PAGES
+'''
+RT_CONST_NEW = RT_CONST_NEW_V11 + '''
+# Bad-connection handling (patch_telemetry 1.2.0). See _get() and scan().
+CONNECT_TIMEOUT = 10    # seconds to open the connection on a slow link ...
+READ_TIMEOUT = 30       # ... and to wait for the next chunk of JSON
+RETRIES = 2             # extra attempts after a timeout, dropped connection, 429 or 5xx
+BACKOFF = (3, 8)        # seconds before retry 1 and 2
+OFFLINE_AFTER = 2       # consecutive network failures before the rest of the scan is skipped
+_NETWORK_FAIL = set()   # NORAD ids whose last fetch died at the network level
 '''
 
 RT_FETCH_OLD = '''    url, observations = SATNOGS_URL, []
@@ -74,7 +97,7 @@ RT_FETCH_OLD = '''    url, observations = SATNOGS_URL, []
             url, params = nxt, None  # the next-link already carries the query string
         return observations, None'''
 
-RT_FETCH_NEW = '''    url, observations = SATNOGS_URL, []
+RT_FETCH_NEW_V11 = '''    url, observations = SATNOGS_URL, []
     _TRUNCATED.discard(norad_id)
     try:
         for _ in range(MAX_PAGES):
@@ -92,6 +115,65 @@ RT_FETCH_NEW = '''    url, observations = SATNOGS_URL, []
             # Loop ran out with a next-link still pending: the window is partial.
             _TRUNCATED.add(norad_id)
         return observations, None'''
+
+RT_EXCEPT = '''
+    except (requests.RequestException, ValueError) as exc:
+        return observations, redact_text(exc)'''
+
+RT_FETCH_NEW = '''    url, observations = SATNOGS_URL, []
+    _TRUNCATED.discard(norad_id)
+    _NETWORK_FAIL.discard(norad_id)
+    try:
+        for _ in range(MAX_PAGES):
+            res = _get(session, url, params)
+            page = res.json()
+            if not isinstance(page, list):
+                return [], "unexpected SatNOGS response shape"
+            observations.extend(page)
+            nxt = res.links.get("next", {}).get("url")
+            if not nxt:
+                break
+            url, params = nxt, None  # the next-link already carries the query string
+        else:
+            # Loop ran out with a next-link still pending: the window is partial.
+            _TRUNCATED.add(norad_id)
+        return observations, None
+    except (requests.ConnectionError, requests.Timeout, requests.exceptions.ChunkedEncodingError) as exc:
+        _NETWORK_FAIL.add(norad_id)   # the link, not SatNOGS: feeds the offline short-cut in scan()
+        return observations, redact_text(exc)
+    except (requests.RequestException, ValueError) as exc:
+        return observations, redact_text(exc)
+
+
+def _retry_after(res):
+    try:
+        return max(0.0, float(res.headers.get("Retry-After", "")))
+    except (TypeError, ValueError):
+        return None
+
+
+def _get(session, url, params):
+    """GET that survives a bad connection: split timeouts, RETRIES extra attempts with BACKOFF.
+
+    Retries timeouts, dropped connections (including a body cut off half-way) and
+    429/5xx answers. Anything else (404, bad request) fails at once. Raises the
+    last error when every attempt fails, so fetch_satnogs() reports it as before.
+    """
+    requests = _requests()
+    transient = (requests.ConnectionError, requests.Timeout, requests.exceptions.ChunkedEncodingError)
+    for attempt in range(RETRIES + 1):
+        wait = BACKOFF[min(attempt, len(BACKOFF) - 1)]
+        try:
+            res = session.get(url, params=params, headers=HEADERS, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT))
+            if res.status_code in (429, 500, 502, 503, 504) and attempt < RETRIES:
+                time.sleep(min(_retry_after(res) or wait, 30))
+                continue
+            res.raise_for_status()
+            return res
+        except transient:
+            if attempt >= RETRIES:
+                raise
+            time.sleep(wait)'''
 
 RT_CLASSIFY_OLD = '''def summarize(observations):
     """SatNOGS `status` is lowercase: good / bad / failed / unknown / future.
@@ -207,7 +289,7 @@ RT_SCAN_OLD = '''            observations, err = fetch_satnogs(session, target["
             row = {"NORAD ID": target["id"], "Target Name": target["name"], "TLE Epoch": epoch,
                    "Status": status, "Packet Health": health}'''
 
-RT_SCAN_NEW = '''            observations, err = fetch_satnogs(session, target["id"], hours)
+RT_SCAN_NEW_V11 = '''            observations, err = fetch_satnogs(session, target["id"], hours)
             good, bad, failed, unvetted = summarize(observations)
             if err:
                 errors += 1
@@ -227,6 +309,50 @@ RT_SCAN_NEW = '''            observations, err = fetch_satnogs(session, target["
                    "TLE Age Days": round(age, 1) if age is not None else None,
                    "TLE Stale": bool(age is not None and age > STALE_TLE_DAYS),
                    "Truncated": target["id"] in _TRUNCATED}'''
+
+RT_SCAN_NEW = '''            if dead_streak >= OFFLINE_AFTER:
+                observations, err = [], "skipped: connection looks down"
+            else:
+                observations, err = fetch_satnogs(session, target["id"], hours)
+                dead_streak = dead_streak + 1 if target["id"] in _NETWORK_FAIL else 0
+            good, bad, failed, unvetted = summarize(observations)
+            from_cache = False
+            if err:
+                errors += 1
+                old = previous.get(target["id"])
+                if old:   # keep the last known result, marked *, rather than a blank LINK ERROR
+                    status = old.get("Status", "LINK ERROR")
+                    health = str(old.get("Packet Health", "")).rstrip("*") + "*"
+                    failed = old.get("Station Failures", 0)
+                    from_cache = True
+                else:
+                    status, health = "LINK ERROR", "N/A (fetch failed)"
+            else:
+                status = classify(good, bad, failed, unvetted)
+                health = health_text(good, bad)
+            raw_epoch = epochs.get(target["id"])
+            if raw_epoch:
+                epoch = format_epoch(raw_epoch)
+            else:
+                epoch = "N/A (No Auth)" if st_state == "no credentials" else "N/A"
+            age = tle_age_days(raw_epoch)
+            row = {"NORAD ID": target["id"], "Target Name": target["name"], "TLE Epoch": epoch,
+                   "Status": status, "Packet Health": health,
+                   "Station Failures": failed,
+                   "TLE Age Days": round(age, 1) if age is not None else None,
+                   "TLE Stale": bool(age is not None and age > STALE_TLE_DAYS),
+                   "Truncated": target["id"] in _TRUNCATED,
+                   "From Cache": from_cache}'''
+
+RT_SCAN_INIT_OLD = "    rows, errors = [], 0\n"
+RT_SCAN_INIT_NEW = '''    rows, errors = [], 0
+    dead_streak = 0
+    try:   # last known results, used for any satellite this scan can't reach
+        previous = {r.get("NORAD ID"): r for r in load_cached_report()[0]
+                    if isinstance(r, dict) and r.get("Status") != "LINK ERROR"}
+    except Exception:  # noqa: BLE001 - a bad cache must never stop a scan
+        previous = {}
+'''
 
 # ============================================================ hannibal_orbital
 OR_FLEET_OLD = '''    colors = {"ONLINE": art.GREEN, "INTERMITTENT": art.GOLD, "OFFLINE": art.RED, "LINK ERROR": art.RED}
@@ -278,8 +404,12 @@ OR_SCREEN_NEW = '''    colors = {"ONLINE": art.GREEN, "INTERMITTENT": art.GOLD, 
 
 OR_FOOT_OLD = '''    print(f" {G}Targets are edited in norad_targets.json; packet health = good / vetted SatNOGS observations (24h).{RS}")'''
 
-OR_FOOT_NEW = '''    print(f" {G}Targets are edited in norad_targets.json; packet health = good / (good + bad) SatNOGS observations (24h), "
+OR_FOOT_NEW_V11 = '''    print(f" {G}Targets are edited in norad_targets.json; packet health = good / (good + bad) SatNOGS observations (24h), "
           f"[95% range]. LOW SAMPLE = under 8 observations; red epoch = TLE older than 14 days.{RS}")'''
+
+OR_FOOT_NEW = '''    print(f" {G}Targets are edited in norad_targets.json; packet health = good / (good + bad) SatNOGS observations (24h), "
+          f"[95% range]. LOW SAMPLE = under 8 observations; red epoch = TLE older than 14 days; "
+          f"* = last known value, SatNOGS unreachable this scan.{RS}")'''
 
 # ======================================================== blueglobe_dashboard
 DB_COLORS_OLD = """        const STATUS_COLORS = { 'ONLINE': '#00ff00', 'INTERMITTENT': '#ffd700', 'OFFLINE': '#ff4040',
@@ -298,15 +428,17 @@ DB_HUD_NEW = """                $('hud-epoch').textContent = data ? (data['TLE E
 PATCHES = {
     "run_telemetry.py": [
         ("import math", RT_IMPORT_OLD, RT_IMPORT_NEW),
-        ("evidence-gate constants", RT_CONST_OLD, RT_CONST_NEW),
-        ("page-cap truncation flag", RT_FETCH_OLD, RT_FETCH_NEW),
+        ("constants (evidence gate + bad-connection)", [RT_CONST_NEW_V11, RT_CONST_OLD], RT_CONST_NEW),
+        ("fetch: retries, split timeouts, page-cap flag",
+         [RT_FETCH_NEW_V11 + RT_EXCEPT, RT_FETCH_OLD + RT_EXCEPT], RT_FETCH_NEW),
         ("summarize / classify / wilson / TLE age", RT_CLASSIFY_OLD, RT_CLASSIFY_NEW),
-        ("scan rows carry new fields", RT_SCAN_OLD, RT_SCAN_NEW),
+        ("scan: last-known fallback + offline short-cut", RT_SCAN_INIT_OLD, RT_SCAN_INIT_NEW),
+        ("scan rows carry new fields", [RT_SCAN_NEW_V11, RT_SCAN_OLD], RT_SCAN_NEW),
     ],
     "hannibal_orbital.py": [
         ("fleet table colours + stale epoch", OR_FLEET_OLD, OR_FLEET_NEW),
         ("[L] screen stale epoch", OR_SCREEN_OLD, OR_SCREEN_NEW),
-        ("[L] screen footer text", OR_FOOT_OLD, OR_FOOT_NEW),
+        ("[L] screen footer text", [OR_FOOT_NEW_V11, OR_FOOT_OLD], OR_FOOT_NEW),
     ],
     "blueglobe_dashboard.html": [
         ("dashboard status colours", DB_COLORS_OLD, DB_COLORS_NEW),
@@ -320,15 +452,17 @@ def apply_to(path: Path, name: str, write: bool):
     original = path.read_text(encoding="utf-8")
     text = original
     notes, count = [], 0
-    for label, old, new in PATCHES[name]:
+    for label, olds, new in PATCHES[name]:
         if new in text:
             notes.append(f"  {label}: already applied")
             continue
-        if old not in text:
+        olds = [olds] if isinstance(olds, str) else olds   # listed newest first: 1.1.0 upgrades in place
+        old = next((o for o in olds if o in text), None)
+        if old is None:
             notes.append(f"  {label}: ANCHOR NOT FOUND - file differs from the reviewed copy, left alone")
             continue
         text = text.replace(old, new, 1)
-        notes.append(f"  {label}: patched")
+        notes.append(f"  {label}: {'upgraded from 1.1.0' if len(olds) > 1 and old == olds[0] else 'patched'}")
         count += 1
     if write and text != original:
         backup = path.with_suffix(path.suffix + ".bak")
