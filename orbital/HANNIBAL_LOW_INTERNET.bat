@@ -9,13 +9,13 @@ color 0E
 cd /d "%~dp0"
 set "HANNIBAL_NET_PROFILE=low"
 
-echo  ===========================================================
+echo  ======================================================
 echo   HANNIBAL :: network profile LOW
 echo   20 s connect / 60 s read, 3 retries (5/15/30 s apart)
 echo   up to 50 observations per satellite (less data)
 echo   stops after 1 dead satellite, rest from last scan (*)
 echo   auto-rescan every 6 h; N2YO/Space-Track/NASA cache 4x longer
-echo  ===========================================================
+echo  ======================================================
 echo.
 
 set "PY="

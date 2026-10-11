@@ -9,12 +9,12 @@ color 0C
 cd /d "%~dp0"
 set "HANNIBAL_NET_PROFILE=normal"
 
-echo  ===========================================================
+echo  ======================================================
 echo   HANNIBAL :: network profile NORMAL
 echo   10 s connect / 30 s read, 2 retries
 echo   up to 150 observations per satellite
 echo   auto-rescan every 30 min
-echo  ===========================================================
+echo  ======================================================
 echo.
 
 set "PY="
