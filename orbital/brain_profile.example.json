@@ -1,0 +1,50 @@
+{
+  "profile_name": "Example profile",
+  "_note": "Copy to brain_profile.json (private, git-ignored) and fill in. With an \"inputs\" block H_brain is computed by the theorem; without it, the \"recorded\" values are shown as they are.",
+  "recorded": {
+    "h_brain": null,
+    "allostatic": "",
+    "archetype": "",
+    "prognosis": "",
+    "components": [],
+    "factors": [],
+    "paradoxes": []
+  },
+  "lobes": {
+    "01": 50,
+    "02": 50,
+    "03": 50,
+    "04": 50,
+    "05": 50,
+    "06": 50,
+    "07": 50,
+    "08": 50,
+    "09": 50,
+    "10": 50
+  },
+  "inputs": {
+    "dR_dop": 0,
+    "S_flux": 0,
+    "O_bond": 0,
+    "E_endo": 0,
+    "C_cort": 0,
+    "A_debt": 0,
+    "Allostatic": 0,
+    "G_calm": 50,
+    "Phi_flow": 0,
+    "M_purpose": 0,
+    "K_agency": 0,
+    "Omega_illogic": [],
+    "beta_think": 0,
+    "tau_tabs": 0,
+    "gamma_compare": 0,
+    "kappa_hangry": 0,
+    "varpi_pizza": 0,
+    "gamma_dep": 0,
+    "tau": 0,
+    "tau0": 1,
+    "DailySpend": 0,
+    "Income": 1,
+    "W_cosmic": 0
+  }
+}

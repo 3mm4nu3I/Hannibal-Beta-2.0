@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Hannibal Market Brain</title>
+<style nonce="{{NONCE}}">
+  :root {
+    --bg: #050816; --panel: #0b1226; --panel2: #0e1730; --line: #1c2a4a;
+    --ink: #e6edf7; --dim: #8a9bb8; --faint: #4b5b7a; --red: #e11d2e; --gold: #f5c542; --cyan: #22d3ee;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.45 ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace; }
+  header { display: flex; align-items: center; gap: 14px; padding: 14px 20px;
+    border-bottom: 1px solid var(--line); background: linear-gradient(90deg, #12060a, var(--bg) 40%); }
+  .star { width: 26px; height: 26px; flex: none; }
+  h1 { font-size: 16px; letter-spacing: .18em; margin: 0; color: var(--ink); }
+  h1 b { color: var(--red); }
+  .sub { color: var(--dim); font-size: 12px; letter-spacing: .08em; }
+  .badge { margin-left: auto; border: 1px solid var(--red); color: var(--red); padding: 3px 10px;
+    font-size: 11px; letter-spacing: .2em; border-radius: 3px; white-space: nowrap; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; padding: 16px 20px; }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+  .stage { position: relative; background: radial-gradient(ellipse at 45% 40%, #0b1430 0%, var(--bg) 70%);
+    border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+    height: min(78vh, 760px); min-height: 540px; align-self: start; }
+  canvas { position: absolute; inset: 0; display: block; }
+  .think { position: absolute; left: 14px; right: 14px; bottom: 14px; padding: 12px 14px;
+    background: rgba(5, 8, 22, .82); border: 1px solid var(--line); border-left: 3px solid var(--red); border-radius: 6px; }
+  .think .k { color: var(--gold); font-size: 11px; letter-spacing: .22em; }
+  .think .v { margin-top: 4px; font-size: 15px; }
+  .controls { position: absolute; top: 12px; right: 12px; display: flex; gap: 8px; }
+  button { background: var(--panel2); color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+    padding: 6px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+  button:hover { border-color: var(--cyan); }
+  button.primary { background: #0891b2; border-color: #0891b2; color: #fff; }
+  aside { display: flex; flex-direction: column; gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .card h2 { margin: 0 0 8px; font-size: 11px; letter-spacing: .22em; color: var(--dim); font-weight: normal; }
+  .theorem { border-color: #3a1620; background: linear-gradient(180deg, #140a14, var(--panel) 60%); }
+  .theorem h2 { color: var(--gold); }
+  .hq { display: flex; align-items: baseline; gap: 6px; }
+  .hq span { font-size: 34px; color: var(--gold); letter-spacing: .02em; }
+  .hq small { color: var(--dim); }
+  .hq em { margin-left: auto; font-style: normal; font-size: 10px; letter-spacing: .18em; color: var(--faint); text-transform: uppercase; }
+  .arch { color: var(--ink); font-size: 12px; margin: 2px 0 10px; }
+  .arch i { color: var(--dim); font-style: normal; display: block; font-size: 11px; }
+  .tlobes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px; }
+  .tl { text-align: center; font-size: 10px; color: var(--dim); }
+  .tl b { display: block; font-size: 13px; font-weight: normal; }
+  .tl s { display: block; height: 4px; border-radius: 2px; margin-top: 3px; text-decoration: none; }
+  .comp div { display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); border-top: 1px dashed var(--line); padding: 3px 0; }
+  .comp div b { color: var(--ink); font-weight: normal; }
+  .eq { margin-top: 8px; font-size: 10.5px; color: var(--faint); line-height: 1.5; }
+  .lobe { display: grid; grid-template-columns: 10px 1fr auto; gap: 8px; align-items: center; padding: 6px 0;
+    border-top: 1px solid #111b33; cursor: pointer; }
+  .lobe:first-of-type { border-top: 0; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .lobe .n { font-size: 13px; }
+  .lobe .r { color: var(--dim); font-size: 11px; }
+  .lobe .p { font-size: 12px; text-align: right; }
+  .bar { grid-column: 2 / 4; height: 3px; background: #121c36; border-radius: 2px; overflow: hidden; }
+  .bar i { display: block; height: 100%; }
+  .lobe.sel { background: #0f1a36; }
+  .detail { font-size: 12px; color: var(--dim); }
+  .detail div { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+  .detail b { color: var(--ink); font-weight: normal; }
+  .paths div { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; padding: 3px 0; }
+  .paths span { color: var(--dim); }
+  .warn { color: #fca5a5; font-size: 12px; }
+  footer { color: var(--faint); font-size: 11px; padding: 0 20px 18px; display: flex; gap: 16px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<header>
+  <svg class="star" viewBox="0 0 100 100" aria-hidden="true"><polygon fill="#e11d2e"
+    points="50,4 61,38 97,38 68,59 79,94 50,72 21,94 32,59 3,38 39,38"/></svg>
+  <div>
+    <h1>HANNIBAL <b>//</b> MARKET BRAIN</h1>
+    <div class="sub">what the market is thinking &middot; ten lobes, live transmission paths</div>
+  </div>
+  <div class="badge">DEV ONLY</div>
+</header>
+
+<main>
+  <section class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="controls">
+      <button id="pause" title="Pause / resume">Pause</button>
+      <button id="reload" title="Fetch the latest state">Refresh</button>
+      <button id="png" class="primary" title="Save the current frame">Download PNG</button>
+    </div>
+    <div class="think"><div class="k">WHAT IT'S THINKING</div><div class="v" id="thinking">Waking up...</div></div>
+  </section>
+
+  <aside>
+    <div class="card"><h2>THE TEN LOBES</h2><div id="lobes"></div></div>
+    <div class="card"><h2 id="dtitle">LOBE DETAIL</h2><div class="detail" id="detail">Click a lobe.</div></div>
+    <div class="card"><h2>FIRING PATHS</h2><div class="paths" id="paths"></div><div class="warn" id="errors"></div></div>
+    <div class="card theorem"><h2>GRAND UNIFIED HAPPINESS THEOREM</h2>
+      <div class="hq"><span id="hval">--</span><small>/ 100</small><em id="hmode"></em></div>
+      <div class="arch" id="harch"></div>
+      <div class="tlobes" id="tlobes"></div>
+      <div class="comp" id="hcomp"></div>
+      <div class="eq" id="heq"></div>
+    </div>
+  </aside>
+</main>
+<footer><span id="stamp">-</span><span id="profile"></span>
+  <span>Source: FRED, Federal Reserve Bank of St. Louis &middot; Hannibal telemetry</span>
+  <span>Activity = 1 - exp(-|z| / 1.5) of each series' latest move</span></footer>
+
+<script nonce="{{NONCE}}">
+"use strict";
+// Lobe positions on a side-view brain (facing left), as fractions of the stage.
+const POS = {
+  prefrontal: [0.20, 0.42], insula: [0.34, 0.50], motor: [0.42, 0.21], somato: [0.55, 0.22],
+  nucleus: [0.47, 0.42], amygdala: [0.43, 0.66], auditory: [0.58, 0.62], parietal: [0.68, 0.30],
+  occipital: [0.83, 0.45], cerebellum: [0.76, 0.75]
+};
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1, state = null, paused = false, selected = null, particles = [], t0 = performance.now();
+
+function resize() {
+  const r = document.getElementById("stage").getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = r.width; H = r.height;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  cv.style.width = W + "px"; cv.style.height = H + "px";
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.fillStyle = "#050816"; ctx.fillRect(0, 0, W, H);
+}
+window.addEventListener("resize", resize);
+
+const xy = id => [POS[id][0] * W, POS[id][1] * (H - 70)];
+const lobe = id => state && state.lobes.find(l => l.id === id);
+const act = id => { const l = lobe(id); return l && l.activity != null ? l.activity : 0; };
+
+// Smooth pseudo-noise flow field (no external libraries).
+function flow(x, y, t) {
+  return Math.sin(x * 0.011 + t * 0.35) * Math.cos(y * 0.013 - t * 0.27) * 2.2
+       + Math.sin((x + y) * 0.006 + t * 0.19);
+}
+
+function spawn() {
+  if (!state) return null;
+  const firing = state.edges.filter(e => e.strength > 0.02);
+  const total = firing.reduce((s, e) => s + e.strength, 0);
+  if (total > 0 && Math.random() < 0.8) {
+    let r = Math.random() * total, e = firing[0];
+    for (const f of firing) { r -= f.strength; if (r <= 0) { e = f; break; } }
+    return { kind: "edge", e, t: 0, speed: 0.0025 + e.strength * 0.012, color: lobe(e.src).color,
+             bend: (Math.random() - 0.5) * 0.5, life: 1, x: 0, y: 0, px: null, py: null };
+  }
+  const ls = state.lobes; const l = ls[Math.floor(Math.random() * ls.length)];
+  const [cx, cy] = xy(l.id); const a = Math.random() * 6.283, d = Math.random() * 26;
+  return { kind: "idle", id: l.id, x: cx + Math.cos(a) * d, y: cy + Math.sin(a) * d, px: null, py: null,
+           hx: cx, hy: cy, color: l.color, life: 0.6 + Math.random() * 0.6, speed: 0.4 + (l.activity || 0) * 2.4 };
+}
+
+function brainShape() {
+  ctx.save();
+  ctx.lineWidth = 1.2; ctx.strokeStyle = "rgba(120,150,210,0.18)"; ctx.fillStyle = "rgba(30,50,100,0.07)";
+  ctx.beginPath();
+  ctx.ellipse(0.52 * W, 0.44 * (H - 70), 0.38 * W, 0.31 * (H - 70), 0, 0, 6.283);
+  ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(0.76 * W, 0.75 * (H - 70), 0.11 * W, 0.09 * (H - 70), -0.2, 0, 6.283);
+  ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0.64 * W, 0.70 * (H - 70));
+  ctx.quadraticCurveTo(0.62 * W, 0.86 * (H - 70), 0.60 * W, 0.97 * (H - 70)); ctx.stroke();
+  ctx.restore();
+}
+
+function drawLobes(t) {
+  if (!state) return;
+  for (const l of state.lobes) {
+    const [x, y] = xy(l.id), a = l.activity == null ? 0 : l.activity;
+    const pulse = 1 + Math.sin(t * (1 + a * 4) + x) * 0.08 * (0.3 + a);
+    const r = (18 + a * 46) * pulse;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, l.activity == null ? "rgba(80,90,120,0.25)" : l.color + "cc");
+    g.addColorStop(1, "rgba(5,8,22,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill();
+    ctx.fillStyle = l.activity == null ? "#4b5b7a" : l.color;
+    ctx.beginPath(); ctx.arc(x, y, selected === l.id ? 6 : 4, 0, 6.283); ctx.fill();
+    ctx.font = "11px ui-monospace, Consolas, monospace"; ctx.textAlign = "center";
+    ctx.fillStyle = "rgba(230,237,247,0.85)"; ctx.fillText(l.name.toUpperCase(), x, y - 12 - a * 10);
+    ctx.fillStyle = "rgba(138,155,184,0.9)"; ctx.fillText(l.region, x, y + 20 + a * 10);
+  }
+}
+
+function step() {
+  const t = (performance.now() - t0) / 1000;
+  if (!paused) {
+    ctx.fillStyle = "rgba(5,8,22,0.16)"; ctx.fillRect(0, 0, W, H);   // comet trails
+    brainShape();
+    const want = state ? 260 + Math.round(state.edges.reduce((s, e) => s + e.strength, 0) * 70) : 120;
+    while (particles.length < want) { const p = spawn(); if (!p) break; particles.push(p); }
+    ctx.lineCap = "round";
+    for (const p of particles) {
+      if (p.kind === "edge") {
+        const [sx, sy] = xy(p.e.src), [dx, dy] = xy(p.e.dst);
+        const mx = (sx + dx) / 2 + (dy - sy) * p.bend, my = (sy + dy) / 2 - (dx - sx) * p.bend;
+        p.t += p.speed;
+        const u = p.t, iu = 1 - u;
+        const n = flow(sx + u * (dx - sx), sy + u * (dy - sy), t) * 3;
+        p.x = iu * iu * sx + 2 * iu * u * mx + u * u * dx + n;
+        p.y = iu * iu * sy + 2 * iu * u * my + u * u * dy + n * 0.6;
+        p.life = 1 - Math.abs(u - 0.5) * 1.6;
+        if (u >= 1) p.dead = true;
+      } else {
+        const ang = flow(p.x, p.y, t);
+        p.x += Math.cos(ang) * p.speed; p.y += Math.sin(ang) * p.speed;
+        p.life -= 0.006;
+        if (p.life <= 0 || Math.hypot(p.x - p.hx, p.y - p.hy) > 70 + (act(p.id) * 60)) p.dead = true;   // stay near home
+      }
+      if (p.px !== null) {
+        ctx.strokeStyle = p.color; ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
+        ctx.lineWidth = p.kind === "edge" ? 2.6 : 1.6;
+        ctx.beginPath(); ctx.moveTo(p.px, p.py); ctx.lineTo(p.x, p.y); ctx.stroke();
+      }
+      p.px = p.x; p.py = p.y;
+    }
+    ctx.globalAlpha = 1;
+    particles = particles.filter(p => !p.dead);
+    drawLobes(t);
+  }
+  requestAnimationFrame(step);
+}
+
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+const pct = v => v == null ? "--" : Math.round(v * 100) + "%";
+
+function renderPanel() {
+  const box = document.getElementById("lobes"); box.replaceChildren();
+  for (const l of state.lobes) {
+    const row = el("div", "lobe" + (selected === l.id ? " sel" : ""));
+    const dot = el("span", "dot"); dot.style.background = l.color;
+    const name = el("div"); name.append(el("div", "n", l.name), el("div", "r", l.region));
+    const p = el("div", "p", pct(l.activity));
+    p.style.color = l.stress == null ? "#4b5b7a" : (l.stress > 0 ? "#fca5a5" : "#86efac");
+    const bar = el("div", "bar"), fill = el("i"); fill.style.width = pct(l.activity || 0); fill.style.background = l.color;
+    bar.append(fill); row.append(dot, name, p, bar);
+    row.addEventListener("click", () => { selected = l.id; renderPanel(); });
+    box.append(row);
+  }
+  const d = document.getElementById("detail"); d.replaceChildren();
+  const s = selected && lobe(selected);
+  document.getElementById("dtitle").textContent = s ? (s.name + " // " + s.region).toUpperCase() : "LOBE DETAIL";
+  if (!s) d.textContent = "Click a lobe.";
+  else if (!s.series.length) d.textContent = "No inputs.";
+  else for (const x of s.series) {
+    const r = el("div"); const v = x.value == null ? "no data" : Number(x.value).toLocaleString(undefined, {maximumFractionDigits: 2});
+    r.append(el("span", null, x.label + (x.date ? " (" + x.date + ")" : "")), el("b", null, v + (x.z == null ? "" : "  z " + x.z)));
+    d.append(r);
+  }
+  const ps = document.getElementById("paths"); ps.replaceChildren();
+  const top = state.edges.slice().sort((a, b) => b.strength - a.strength).slice(0, 6);
+  for (const e of top) {
+    const r = el("div"); r.append(el("span", null, e.label), el("b", null, pct(e.strength)));
+    ps.append(r);
+  }
+  document.getElementById("errors").textContent = (state.errors || []).slice(0, 3).join("  |  ");
+  renderTheorem();
+}
+
+function renderTheorem() {
+  const t = state.theorem; if (!t) return;
+  document.getElementById("hval").textContent = t.h_display == null ? "--" : Number(t.h_display).toFixed(1);
+  document.getElementById("hmode").textContent = t.mode === "computed" ? "computed" : (t.mode === "error" ? "input error" : "as recorded");
+  const a = document.getElementById("harch"); a.replaceChildren();
+  const r = t.recorded || {};
+  a.append(el("div", null, r.archetype || t.profile_name || (t.error ? t.error : "No profile yet")));
+  if (r.allostatic) a.append(el("i", null, "Allostatic strain " + r.allostatic));
+  const g = document.getElementById("tlobes"); g.replaceChildren();
+  for (const l of (t.lobes || [])) {
+    const m = lobe(l.id), c = el("div", "tl");
+    c.title = l.name + " (" + l.colour + ")\n" + l.role;
+    c.append(el("b", null, l.pct == null ? "--" : l.pct + "%"), el("span", null, l.num));
+    const s = el("s"); s.style.background = m ? m.color : "#4b5b7a"; s.style.opacity = l.pct == null ? .25 : (.25 + .75 * l.pct / 100);
+    c.append(s); g.append(c);
+  }
+  const comp = document.getElementById("hcomp"); comp.replaceChildren();
+  if (t.result) {
+    const R = t.result, f = v => (v >= 0 ? "+" : "") + v.toFixed(1);
+    for (const [k, v] of [["Wetware", R.wetware.toFixed(1)], ["Multiplier", "\u00d7" + R.multiplier.toFixed(2)], ["Illogical surge", f(R.illogic)],
+                          ["Whimsical bonus", f(R.w_cosmic)], ["Firmware drag", f(-R.firmware)], ["Withdrawal & leakage", f(-(R.withdrawal + R.leakage))]]) {
+      const d = el("div"); d.append(el("span", null, k), el("b", null, v)); comp.append(d);
+    }
+  } else for (const line of (r.components || [])) {
+    const i = line.indexOf(":"), d = el("div");
+    d.append(el("span", null, line.slice(0, i).trim()), el("b", null, line.slice(i + 1).trim())); comp.append(d);
+  }
+  document.getElementById("heq").textContent = t.canonical || "";
+}
+
+async function load() {
+  try {
+    const res = await fetch("/state.json", { credentials: "same-origin", cache: "no-store" });
+    if (!res.ok) throw new Error(res.status === 403 ? "session expired - reopen from Hannibal [R]" : "HTTP " + res.status);
+    const s = await res.json();
+    if (!s || !s.lobes || !s.lobes.length) { document.getElementById("thinking").textContent = "Computing the first state..."; setTimeout(load, 4000); return; }
+    state = s;
+    document.getElementById("thinking").textContent = s.thinking.text;
+    document.getElementById("stamp").textContent = "State: " + s.generated;
+    document.getElementById("profile").textContent = "Network profile: " + s.profile;
+    renderPanel();
+  } catch (err) {
+    document.getElementById("thinking").textContent = "Link lost: " + err.message;
+  }
+}
+
+document.getElementById("pause").addEventListener("click", e => { paused = !paused; e.target.textContent = paused ? "Resume" : "Pause"; });
+document.getElementById("reload").addEventListener("click", load);
+document.getElementById("png").addEventListener("click", () => {
+  const a = document.createElement("a"); a.download = "hannibal_market_brain.png"; a.href = cv.toDataURL("image/png"); a.click();
+});
+
+resize(); load(); setInterval(load, 60000); requestAnimationFrame(step);
+</script>
+</body>
+</html>

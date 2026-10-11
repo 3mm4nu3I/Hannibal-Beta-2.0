@@ -1,0 +1,31 @@
+numpy
+pandas
+requests
+tabulate
+yfinance
+tzdata
+cryptography
+defusedxml
+pyinstaller
+phonenumbers
+keyring
+
+# defusedxml is imported unconditionally by hannibal_terminal.py (it refuses to start
+# without it) -- it was previously missing from this list.
+#
+# requests is used by every orbital module (SatNOGS, Space-Track, NASA/JPL, BlueGlobe feeder).
+#
+# pandas/tabulate are no longer needed by the satellite module (run_telemetry.py prints
+# its own table); they stay because the terminal itself uses pandas.
+#
+# Note on pyfiglet: NOT listed here on purpose. It was used once, offline,
+# to generate the ASCII login banner text, which is now hardcoded as a
+# plain string directly in hannibal_terminal.py.
+#
+# phonenumbers is used by hannibal_geoint.py for OFFLINE phone-number metadata
+# (country, registered number range, carrier, line type) -- no network call, no
+# location lookup. IP geolocation in that same module uses plain `requests`
+# (already listed above) against a free, keyless provider.
+#
+# keyring keeps API keys (FRED) in the Windows Credential Manager / macOS Keychain
+# instead of in files. Optional: without it, set FRED_API_KEY as an environment variable.
