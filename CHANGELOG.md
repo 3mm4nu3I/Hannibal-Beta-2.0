@@ -3,8 +3,9 @@
 Newest first. Each entry says what changed, why, and what was and was not verified.
 Per-module detail lives next to the module (e.g. orbital/CHANGELOG_telemetry.md).
 
-## 2026-10-11 — orbital telemetry 1.2.0 (bad connections)
-- `orbital/patch_telemetry.py` 1.2.0: split timeouts (10 s connect / 30 s read), 2 retries with back-off (Retry-After honoured), last known result kept and marked `*` when SatNOGS can't be reached, rest of the scan skipped after 2 network failures in a row. Upgrades a 1.1.0-patched file in place.
+## 2026-10-11 — orbital telemetry 1.2.0 (bad connections + launchers)
+- `orbital/patch_telemetry.py` 1.2.0: split timeouts, retries with back-off, last known result kept and marked `*` when SatNOGS can't be reached, offline short-cut. Two network profiles via `HANNIBAL_NET_PROFILE`; also covers N2YO / Space-Track / NASA through hannibal_net. Backups now `*.pre-telemetry.bak` so patch_orbital's `hannibal_net.py.bak` is never touched. Upgrades a 1.1.0-patched file in place.
+- `orbital/HANNIBAL_NORMAL.bat`, `orbital/HANNIBAL_LOW_INTERNET.bat`: launchers that set the profile.
 - Full detail: orbital/CHANGELOG_telemetry.md
 
 ## 2026-10-11 — orbital telemetry 1.1.0

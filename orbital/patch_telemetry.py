@@ -5,14 +5,15 @@ patch_telemetry.py — evidence-gated link health for the Hannibal orbital modul
 Dry run by default. Nothing is written until you pass --apply.
 
     python patch_telemetry.py              # show what would change
-    python patch_telemetry.py --apply      # write changes (.bak backups first)
-    python patch_telemetry.py --revert     # restore every .bak
+    python patch_telemetry.py --apply      # write changes (*.pre-telemetry.bak backups first)
+    python patch_telemetry.py --revert     # restore every *.pre-telemetry.bak
     python patch_telemetry.py --selftest   # run the classifier on the 2026-10 scan numbers
 
-Touches three files (whichever are in --dir):
-    run_telemetry.py          the maths (all of the behaviour change is here)
-    hannibal_orbital.py       colours for the new labels, red TLE epoch when stale
+Touches four files (whichever are in --dir):
+    run_telemetry.py          the maths and the SatNOGS fetch
+    hannibal_orbital.py       colours for the new labels, red TLE epoch when stale, rescan interval
     blueglobe_dashboard.html  same colours on the web dashboard, STALE tag in the HUD
+    hannibal_net.py           low-internet profile for the other providers (N2YO, Space-Track, NASA)
 
 Compatible with the 2026-10-11 Earth-export patch (hannibal_sat): that one adds
 a block after MENU; these anchors are elsewhere in the file. Either order works.
@@ -44,6 +45,13 @@ WHAT CHANGES AND WHY
 10. Offline short-cut: after 2 satellites in a row fail at the network level,
    the rest are skipped (and filled from the cache) instead of each one
    timing out in turn. A dead link costs about 80 s, not minutes.
+11. Two network profiles, picked by HANNIBAL_NET_PROFILE (the launchers
+   HANNIBAL_NORMAL.bat / HANNIBAL_LOW_INTERNET.bat set it):
+     normal  10 s connect / 30 s read, 2 retries, up to 150 obs per satellite,
+             auto-rescan every 30 min
+     low     20 s / 60 s, 3 retries (5, 15, 30 s apart), up to 50 obs per
+             satellite, gives up after 1 dead satellite, auto-rescan every
+             6 h, N2YO/Space-Track/NASA answers reused from cache 4x longer
 Upgrades a file already patched with 1.1.0 in place; a fresh file goes
 straight to 1.2.0.
 """
@@ -74,11 +82,16 @@ _TRUNCATED = set()      # NORAD ids whose last fetch hit MAX_PAGES
 '''
 RT_CONST_NEW = RT_CONST_NEW_V11 + '''
 # Bad-connection handling (patch_telemetry 1.2.0). See _get() and scan().
-CONNECT_TIMEOUT = 10    # seconds to open the connection on a slow link ...
-READ_TIMEOUT = 30       # ... and to wait for the next chunk of JSON
-RETRIES = 2             # extra attempts after a timeout, dropped connection, 429 or 5xx
-BACKOFF = (3, 8)        # seconds before retry 1 and 2
-OFFLINE_AFTER = 2       # consecutive network failures before the rest of the scan is skipped
+# HANNIBAL_NET_PROFILE=low (set by HANNIBAL_LOW_INTERNET.bat) trades speed for surviving a bad link
+# and downloads less; anything else is the normal profile.
+LOW_NET = os.getenv("HANNIBAL_NET_PROFILE", "normal").strip().lower() == "low"
+CONNECT_TIMEOUT = 20 if LOW_NET else 10     # seconds to open the connection ...
+READ_TIMEOUT = 60 if LOW_NET else 30        # ... and to wait for the next chunk of JSON
+RETRIES = 3 if LOW_NET else 2               # extra attempts after a timeout, drop, 429 or 5xx
+BACKOFF = (5, 15, 30) if LOW_NET else (3, 8)  # seconds before each retry
+OFFLINE_AFTER = 1 if LOW_NET else 2         # network failures in a row before the rest is skipped
+if LOW_NET:
+    MAX_PAGES = 2       # 50 observations per satellite instead of 150; busy ones get flagged Truncated
 _NETWORK_FAIL = set()   # NORAD ids whose last fetch died at the network level
 '''
 
@@ -402,6 +415,12 @@ OR_SCREEN_NEW = '''    colors = {"ONLINE": art.GREEN, "INTERMITTENT": art.GOLD, 
               f"{color}{str(r.get('Status', '')):<13}{RS} | "
               f"{str(r.get('Packet Health', ''))}")'''
 
+OR_STALE_OLD = "SAT_STALE_SECONDS = 1800\n"
+OR_STALE_NEW = '''SAT_STALE_SECONDS = 1800
+if os.getenv("HANNIBAL_NET_PROFILE", "normal").strip().lower() == "low":
+    SAT_STALE_SECONDS = 6 * 3600   # low-internet launcher: auto-rescan every 6 h, not 30 min ([L] still rescans now)
+'''
+
 OR_FOOT_OLD = '''    print(f" {G}Targets are edited in norad_targets.json; packet health = good / vetted SatNOGS observations (24h).{RS}")'''
 
 OR_FOOT_NEW_V11 = '''    print(f" {G}Targets are edited in norad_targets.json; packet health = good / (good + bad) SatNOGS observations (24h), "
@@ -410,6 +429,19 @@ OR_FOOT_NEW_V11 = '''    print(f" {G}Targets are edited in norad_targets.json; p
 OR_FOOT_NEW = '''    print(f" {G}Targets are edited in norad_targets.json; packet health = good / (good + bad) SatNOGS observations (24h), "
           f"[95% range]. LOW SAMPLE = under 8 observations; red epoch = TLE older than 14 days; "
           f"* = last known value, SatNOGS unreachable this scan.{RS}")'''
+
+# =============================================================== hannibal_net
+NET_REQ_OLD = '''        key = self._key(method, url, params, cache_key) if (ttl or stale_ok) else None
+'''
+NET_REQ_NEW = '''        if os.getenv("HANNIBAL_NET_PROFILE", "normal").strip().lower() == "low":
+            # Low-internet launcher (patch_telemetry 1.2.0): patient timeouts, one more retry,
+            # and cached answers reused 4x longer so fewer downloads happen at all.
+            if isinstance(timeout, (int, float)):
+                timeout = (20, max(60, timeout))
+            retries = max(retries, 3)
+            ttl = ttl * 4
+        key = self._key(method, url, params, cache_key) if (ttl or stale_ok) else None
+'''
 
 # ======================================================== blueglobe_dashboard
 DB_COLORS_OLD = """        const STATUS_COLORS = { 'ONLINE': '#00ff00', 'INTERMITTENT': '#ffd700', 'OFFLINE': '#ff4040',
@@ -439,6 +471,10 @@ PATCHES = {
         ("fleet table colours + stale epoch", OR_FLEET_OLD, OR_FLEET_NEW),
         ("[L] screen stale epoch", OR_SCREEN_OLD, OR_SCREEN_NEW),
         ("[L] screen footer text", [OR_FOOT_NEW_V11, OR_FOOT_OLD], OR_FOOT_NEW),
+        ("auto-rescan interval follows HANNIBAL_NET_PROFILE", OR_STALE_OLD, OR_STALE_NEW),
+    ],
+    "hannibal_net.py": [
+        ("low-internet profile for N2YO / Space-Track / NASA requests", NET_REQ_OLD, NET_REQ_NEW),
     ],
     "blueglobe_dashboard.html": [
         ("dashboard status colours", DB_COLORS_OLD, DB_COLORS_NEW),
@@ -446,6 +482,10 @@ PATCHES = {
         ("HUD stale tag", DB_HUD_OLD, DB_HUD_NEW),
     ],
 }
+
+
+# Own suffix: patch_orbital.py already keeps hannibal_net.py.bak, and that one must survive.
+BACKUP_SUFFIX = ".pre-telemetry.bak"
 
 
 def apply_to(path: Path, name: str, write: bool):
@@ -465,7 +505,7 @@ def apply_to(path: Path, name: str, write: bool):
         notes.append(f"  {label}: {'upgraded from 1.1.0' if len(olds) > 1 and old == olds[0] else 'patched'}")
         count += 1
     if write and text != original:
-        backup = path.with_suffix(path.suffix + ".bak")
+        backup = path.with_name(path.name + BACKUP_SUFFIX)
         if not backup.exists():
             shutil.copy2(path, backup)
             notes.append(f"  backup written to {backup.name}")
@@ -539,7 +579,7 @@ def selftest(root: Path) -> int:
 def revert(root: Path) -> int:
     restored = 0
     for name in PATCHES:
-        backup = (root / name).with_suffix(Path(name).suffix + ".bak")
+        backup = root / (name + BACKUP_SUFFIX)
         if backup.exists():
             shutil.copy2(backup, root / name)
             print(f"[+] restored {name} from {backup.name}")
@@ -585,7 +625,7 @@ def main() -> int:
     if not args.apply:
         print(f"{total} change(s) staged. Re-run with --apply to write them.")
         return 0
-    print(f"{total} change(s) written. Originals kept as .bak - `--revert` restores them.")
+    print(f"{total} change(s) written. Originals kept as *{BACKUP_SUFFIX} - `--revert` restores them.")
     return selftest(root) if (root / "run_telemetry.py").exists() else 0
 
 
