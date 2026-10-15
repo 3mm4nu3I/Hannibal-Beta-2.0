@@ -3,6 +3,51 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-16] Fix: "overhead now" was silently computed for 0N 0E
+
+### What was wrong
+`hannibal_net.home_location()` fell back to latitude 0, longitude 0 (the Gulf of Guinea) whenever
+`HANNIBAL_HOME_LAT` / `HANNIBAL_HOME_LON` were not set, and nothing on screen said so. Every
+observer-dependent screen used that point: `[H]` home window, `[N]` > Military / Globalstar / any category
+overhead, `[5]` sky tonight, Horizons observer ephemerides, satellite passes, and the BlueGlobe home marker.
+
+How it showed up: a real run listed "MILITARY OVERHEAD NOW (113 above the horizon)" with geostationary
+satellites (UFO, DSCS, AEHF 2, SKYNET 5C, SICRAL 1B, LUCH) at 55-85 deg elevation. The table's own columns
+gave it away: DROR-1, sub-point 0.0, -4.0, "GROUND km 450" = exactly 4 deg from 0N 0E. From a mid-latitude
+European home (~51N) no geostationary satellite can rise above ~31 deg. The orbital math was right; only the
+observer was wrong.
+
+### What changed
+- `hannibal_net.home_location()` now looks up the home in this order, first match wins:
+  1. `HANNIBAL_HOME_LAT` **and** `HANNIBAL_HOME_LON` (+ `_ALT_KM`, `_NAME`) environment variables, as before;
+  2. **new** `~/.hannibal/home.json` in your user profile (owner-only; never in the project folder);
+  3. nothing set: still 0, 0 so nothing crashes, but marked `set=False` and named `HOME NOT SET (0N 0E)`.
+  The result also carries `source` (`environment`, the file path, or `unset`).
+- **New** `python hannibal_orbital.py --set-home LAT LON NAME` writes `~/.hannibal/home.json` once
+  (decimal degrees, north/east positive; range-checked). Can be combined with `--home`, `--sky`, etc.
+  `hannibal_net.save_home()` is the same thing for code. Honors `HANNIBAL_VAULT_DIR` like the credential vault.
+- Every overhead table now prints the observer under its title (`Observer: NAME (+lat, +lon)`), or a red
+  `[!] NO HOME SET: using 0N 0E. Fix: ...` line. The home window shows it once, under its header. The sky
+  screen shows the same warning. `--status` reports the home and where it came from, or `NOT SET` in red.
+- BlueGlobe (`hannibal_blueglobe._config_payload`) now uses `home_location()` too, so a saved home reaches
+  the 3D globe (served on 127.0.0.1 only, as before). Falls back to the old env-only lookup if the import fails.
+- Partial environment (only `HANNIBAL_HOME_LAT` set) no longer silently pairs it with longitude 0: it is
+  ignored and the saved file (or the warning) applies.
+- No coordinates added to source: this repository is public.
+
+### Verified (offline, in a clean environment)
+- nothing set -> `set=False`, home window / sky / overhead tables / `--status` all show the warning;
+- `--set-home 151 4 X` refused (rc 2), `--set-home 51` refused (rc 2); a valid call writes `home.json`
+  with mode 0600 and every screen then shows `Observer: <name>`;
+- both env vars set -> env wins; only one set -> file wins;
+- BlueGlobe payload picks up the saved home;
+- spherical check with the module's own `elevation_deg`: from 51.2N the best possible geostationary
+  elevation is 31.4 deg (DROR-1 at 0, -4 would be 30.8 deg, 5,750 km ground distance).
+
+### Not verified
+- A live N2YO `above` call from the new home (needs your N2YO key, which never leaves your machine).
+- The frozen `.exe`: rebuild it (`build.bat`) to pick this up; an old build keeps the old behaviour.
+
 ## [2026-10-11] Integration: one Orbital Directorate, everything merged
 
 ### Sources that were merged
