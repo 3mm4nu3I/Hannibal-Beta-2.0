@@ -34,7 +34,7 @@ import hannibal_login
 import hannibal_n2yo
 import run_telemetry as rt
 from hannibal_creds import session_get, session_set
-from hannibal_net import base_dir, default_net, home_location, mask_id, redact_text
+from hannibal_net import HOME_NOT_SET_HELP, base_dir, default_net, home_location, mask_id, redact_text, save_home
 from hannibal_n2yo import CATEGORIES, GLOBALSTAR, MENU_CATEGORIES, MILITARY, N2YO
 from hannibal_nasa import FAMILIES, Nasa
 from hannibal_spacetrack import CREDENTIALS_HELP, SpaceTrack, get_credentials
@@ -197,7 +197,8 @@ def get_above(category=MILITARY, radius=90):
         return {"error": redact_text(exc), "note": "", "rows": [], "count": 0, "category": category,
                 "category_name": CATEGORIES.get(category, str(category))}
     out = _n2yo_dict(res)
-    out.update({"rows": [], "count": 0, "category": category, "category_name": CATEGORIES.get(category, str(category))})
+    out.update({"rows": [], "count": 0, "category": category, "category_name": CATEGORIES.get(category, str(category)),
+                "home": home_location()})
     if res.data:
         out.update(res.data)
     return out
@@ -287,6 +288,13 @@ def _table(headers, rows, widths, color=True, row_codes=None):
     return lines
 
 
+def home_line(home, color=True):
+    """One line naming the observer, or a red warning when no home is set (never compute silently for 0N 0E)."""
+    if not home.get("set", True):
+        return _c("  [!] " + HOME_NOT_SET_HELP, art.RED, color=color)
+    return _c(f"  Observer: {home['name']}  ({home['lat']:+.4f}, {home['lon']:+.4f})", art.GRAY, color=color)
+
+
 def _notice(data, color=True):
     """One line about staleness / errors for a provider result dict."""
     if data.get("error"):
@@ -323,6 +331,8 @@ def sky_lines(data, color=True):
     home = data["home"]
     out = [art.section(f"SKY OVER {home['name'].upper()}  ({home['lat']:.4f}, {home['lon']:.4f})"
                        f"   as of {data['as_of'] or 'n/a'} UT", 89, color)]
+    if not home.get("set", True):
+        out.append(home_line(home, color))
     deg = art.sym("deg")
     scale = ("-90" + deg).ljust(18) + "0" + ("+90" + deg).rjust(18)
     head = f"{'BODY':<8} {'AZ':>7} {'DIR':<3}  {'EL':>7}  {scale} {'MAG':>5}  RANGE"
@@ -585,7 +595,12 @@ def screen_status(ask, out, color):
         + ("" if s.get("fred") else "   -> menu [M], or: python hannibal_fred.py --set-key (or setx FRED_API_KEY)"))
     out(f"  BlueGlobe API key       : {yes if s['blueglobe_key'] else _c('default test key', art.GOLD, color=color)}   (BLUEGLOBE_API_KEY)")
     out(f"  Output masking          : {yes.replace('SET', 'ACTIVE') if s['masking'] else _c('not installed in this process', art.GOLD, color=color)}")
-    out(f"  Home location           : {s['home']['name']} ({s['home']['lat']:.4f}, {s['home']['lon']:.4f})")
+    if s["home"].get("set", True):
+        out(f"  Home location           : {s['home']['name']} ({s['home']['lat']:.4f}, {s['home']['lon']:.4f})"
+            f"   from {s['home'].get('source', 'environment')}")
+    else:
+        out(f"  Home location           : {no}   -> python hannibal_orbital.py --set-home LAT LON NAME"
+            "   (until then everything is computed for 0N 0E)")
     out(f"  Response cache          : {s['cache_entries']} entries in {default_net().cache_dir}")
     out("  JPL services need no key. Space-Track policy: <30 req/min, <300/h, GP 1/h, SATCAT/DECAY 1/day (enforced).")
 
@@ -620,10 +635,12 @@ def screen_gallery(ask, out, color):
         out(_c(f"  {art.sym('star')} {slogan}", art.GOLD, color=color))
 
 
-def _above_table(data, out, color, limit=8, numbered=False):
+def _above_table(data, out, color, limit=8, numbered=False, show_observer=True):
     """Print one N2YO 'above' result. Returns the rows shown."""
     title = f"{data['category_name'].upper()} OVERHEAD NOW  ({data.get('count', 0)} above the horizon)"
     out(art.section(title, 89, color))
+    if show_observer:
+        out(home_line(data.get("home") or home_location(), color))
     n = _notice(data, color)
     n and out(n)
     rows = data.get("rows", [])[:limit]
@@ -646,11 +663,12 @@ def screen_home(ask, out, color):
     d = get_overhead()
     home = d["home"]
     out(art.section(f"ON THE SKY OVER {home['name'].upper()} -- N2YO", 89, color))
+    out(home_line(home, color))
     if not d["configured"]:
         out(_c("  [!] no N2YO API key yet -- pick [K] to enter it (free key: n2yo.com > profile > API key).", art.RED, color=color))
         return
     for key in ("military", "globalstar"):
-        _above_table(d[key], out, color)
+        _above_table(d[key], out, color, show_observer=False)
         out("")
 
 
@@ -1101,7 +1119,26 @@ def main(argv=None):
     ap.add_argument("--no-anim", action="store_true", help="skip the boot animation")
     ap.add_argument("--sat", metavar="NORAD", type=int, help="N2YO detail for one satellite (position, TLE, passes)")
     ap.add_argument("--no-login", action="store_true", help="do not ask for the Space-Track login / N2YO key")
+    ap.add_argument("--set-home", nargs="+", metavar="LAT_LON_NAME",
+                    help="save your observer location to ~/.hannibal/home.json, e.g. --set-home 48.8566 2.3522 Paris "
+                         "(decimal degrees, north/east positive)")
     args = ap.parse_args(argv)
+
+    if args.set_home:
+        if len(args.set_home) < 2:
+            ap.error("--set-home needs LAT LON [NAME]")
+        try:
+            path = save_home(args.set_home[0], args.set_home[1], " ".join(args.set_home[2:]) or "Home Station")
+        except (ValueError, OSError) as exc:
+            print(f"  [!] home not saved: {exc}")
+            return 2
+        h = home_location()
+        print(f"  Home saved to {path}: {h['name']} ({h['lat']:+.4f}, {h['lon']:+.4f})")
+        if h.get("source") == "environment":
+            print("  [~] note: HANNIBAL_HOME_LAT / _LON are set in your environment and take precedence over this file.")
+        if not any(getattr(args, n) for n in ("scan", "sky", "home", "moons", "decay", "conjunctions", "boxscore",
+                                               "art", "status", "dashboard", "feeder")) and args.sat is None:
+            return 0
 
     color = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
     ask = lambda prompt, default="": (input(prompt).strip() or default)

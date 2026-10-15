@@ -40,6 +40,17 @@ python hannibal_orbital.py          # interactive menu (standalone)
 python patch_hannibal.py            # wire the keys below into hannibal_terminal.py
 ```
 
+## First run: set your home
+
+Everything "above you" is computed for your home location. Set it once:
+
+```
+python hannibal_orbital.py --set-home LAT LON NAME      # decimal degrees, north/east positive
+```
+
+It is saved in `~/.hannibal/home.json` (your user folder, not this one). Until it is set, the overhead and sky
+screens show a red `NO HOME SET` line and compute for 0N 0E.
+
 ## Where do I type my passwords?
 
 When the Orbital Ops menu opens (`python hannibal_orbital.py`, or `[V]` in the terminal) it asks **once**:
@@ -191,7 +202,9 @@ its free-tier daily limit, and each IP is cached for 7 days since geography for 
 SPACETRACK_USER / SPACETRACK_PASS      preferred over what you type and over norad_targets.json
 N2YO_API_KEY                           your N2YO REST key (same precedence)
 BLUEGLOBE_API_KEY                      your BlueGlobe key (your origin must be whitelisted)
-HANNIBAL_HOME_LAT / _LON / _ALT_KM / _NAME     your sky location (no default location in source: set these, or sky features compute from 0, 0)
+HANNIBAL_HOME_LAT / _LON / _ALT_KM / _NAME     your sky location; or save it once with
+                                       python hannibal_orbital.py --set-home LAT LON NAME  (-> ~/.hannibal/home.json).
+                                       No location in source. Unset, every 'overhead' screen says NO HOME SET (0N 0E).
 HANNIBAL_ADSB_SOURCE / HANNIBAL_FEEDER_ID      feeder source URL / feeder id
 HANNIBAL_ASCII_ONLY=1                  pure ASCII art for consoles without block glyphs
 HANNIBAL_NO_MASK=1  HANNIBAL_NO_ANIM=1

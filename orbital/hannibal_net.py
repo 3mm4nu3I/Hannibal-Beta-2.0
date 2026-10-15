@@ -69,17 +69,87 @@ def resource_path(name):
     return base_dir() / name
 
 
+HOME_FILE_NAME = "home.json"
+HOME_NOT_SET_HELP = "NO HOME SET: using 0N 0E. Fix: hannibal_orbital.py --set-home LAT LON NAME"
+
+
+def home_file():
+    """~/.hannibal/home.json -- in YOUR user profile, never in the project folder (it travels with the repo)."""
+    return Path(os.environ.get("HANNIBAL_VAULT_DIR") or (Path.home() / ".hannibal")) / HOME_FILE_NAME
+
+
+def _valid_latlon(lat, lon):
+    return -90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0
+
+
+def _read_home_file():
+    try:
+        with open(home_file(), "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+        lat, lon = float(data["lat"]), float(data["lon"])
+        if not _valid_latlon(lat, lon):
+            return None
+        return {"lat": lat, "lon": lon, "alt_km": float(data.get("alt_km", 0.1)),
+                "name": (str(data.get("name") or "").strip() or "Home Station")[:40]}
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+
+
 def home_location():
-    """Observer location used by the sky / pass features. Override with env vars."""
-    def _f(name, default):
+    """Observer location for every sky / pass / overhead feature.
+
+    First match wins:
+      1. HANNIBAL_HOME_LAT + HANNIBAL_HOME_LON (+ _ALT_KM, _NAME) environment variables
+      2. ~/.hannibal/home.json, written by `python hannibal_orbital.py --set-home LAT LON NAME`
+      3. nothing set -> 0, 0 with set=False, so screens say so instead of silently
+         computing "above you" for the Gulf of Guinea (the bug fixed on 2026-10-16).
+    No real coordinates in source: this file travels with the repository.
+    """
+    try:
+        alt_env = float(os.getenv("HANNIBAL_HOME_ALT_KM", "").strip())
+    except ValueError:      # unset or not a number
+        alt_env = None
+    lat_s, lon_s = os.getenv("HANNIBAL_HOME_LAT", "").strip(), os.getenv("HANNIBAL_HOME_LON", "").strip()
+    if lat_s and lon_s:
         try:
-            return float(os.getenv(name, default))
+            lat, lon = float(lat_s), float(lon_s)
+            if _valid_latlon(lat, lon):
+                return {"lat": lat, "lon": lon, "alt_km": 0.1 if alt_env is None else alt_env,
+                        "name": os.getenv("HANNIBAL_HOME_NAME", "").strip() or "Home Station",
+                        "set": True, "source": "environment"}
         except ValueError:
-            return float(default)
-    # No real coordinates in source: this file travels with the repository.
-    # Set HANNIBAL_HOME_LAT / _LON / _NAME for the sky and pass features.
-    return {"lat": _f("HANNIBAL_HOME_LAT", 0.0), "lon": _f("HANNIBAL_HOME_LON", 0.0),
-            "alt_km": _f("HANNIBAL_HOME_ALT_KM", 0.1), "name": os.getenv("HANNIBAL_HOME_NAME", "Home Station")}
+            pass
+    saved = _read_home_file()
+    if saved:
+        if alt_env is not None:
+            saved["alt_km"] = alt_env
+        saved.update({"set": True, "source": str(home_file())})
+        return saved
+    return {"lat": 0.0, "lon": 0.0, "alt_km": 0.1 if alt_env is None else alt_env,
+            "name": "HOME NOT SET (0N 0E)", "set": False, "source": "unset"}
+
+
+def save_home(lat, lon, name="Home Station", alt_km=0.1):
+    """Write ~/.hannibal/home.json (owner-only). Returns the path written. Raises ValueError on bad input."""
+    lat, lon, alt_km = float(lat), float(lon), float(alt_km)
+    if not _valid_latlon(lat, lon):
+        raise ValueError("latitude must be -90..90 and longitude -180..180 (decimal degrees, east/north positive)")
+    path = home_file()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(path.parent, 0o700)
+    except OSError:
+        pass
+    tmp = path.with_name(HOME_FILE_NAME + ".tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        json.dump({"lat": lat, "lon": lon, "alt_km": alt_km, "name": (str(name).strip() or "Home Station")[:40]}, fh)
+    os.replace(tmp, path)
+    try:
+        os.chmod(path, 0o600)
+    except OSError:
+        pass
+    return path
 
 
 def mask_id(value, keep=4):

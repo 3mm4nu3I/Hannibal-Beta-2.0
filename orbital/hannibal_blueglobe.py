@@ -106,12 +106,18 @@ def _config_payload():
         except ValueError:
             return float(default)
 
+    # No real coordinates in source: this payload is served to the browser (127.0.0.1 only).
+    # Same lookup as every terminal screen: env vars, then ~/.hannibal/home.json (--set-home).
+    try:
+        from hannibal_net import home_location
+        h = home_location()
+        home = {"lat": h["lat"], "lon": h["lon"], "name": h["name"], "set": h.get("set", True)}
+    except Exception:  # never let the globe fail to start over its home marker
+        home = {"lat": _float("HANNIBAL_HOME_LAT", 0.0), "lon": _float("HANNIBAL_HOME_LON", 0.0),
+                "name": os.getenv("HANNIBAL_HOME_NAME", "Home Station")}
     return {
         "apiKey": os.getenv("BLUEGLOBE_API_KEY", "blueglobe-test"),
-        # No real coordinates in source: this payload is served to the browser.
-        "home": {"lat": _float("HANNIBAL_HOME_LAT", 0.0),
-                 "lon": _float("HANNIBAL_HOME_LON", 0.0),
-                 "name": os.getenv("HANNIBAL_HOME_NAME", "Home Station")},
+        "home": home,
     }
 
 
