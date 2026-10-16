@@ -96,6 +96,7 @@ box-score screens. Soviet space art lives in `hannibal_art.py` (menu `[A]`, or `
 
 * `[L]` fleet link health (press again to force a rescan)
 * `[B]` open the 3D BlueGlobe dashboard
+* `[E]` **Moonbounce (EME)** -- can your station hear its own echo off the Moon? Live link budget (dish, power, band) using the Moon's current range/range-rate from Horizons; also `python hannibal_orbital.py --eme`. Set the station with `HANNIBAL_EME_BAND/_DISH_M/_PT_W/_TSYS_K`.
 * `[V]` Orbital Ops page; press `[V]` again to open the menu (asks for your logins once, then shows Military + Globalstar overhead)
 
 ## The Orbital Ops menu
