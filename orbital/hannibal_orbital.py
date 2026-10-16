@@ -834,6 +834,75 @@ def screen_logins(ask, out, color):
     reset_clients()
 
 
+def screen_eme(ask, out, color):
+    """Earth-Moon-Earth (moonbounce) link budget: can your station hear its own echo off the Moon?"""
+    import hannibal_eme as eme
+    d = eme.station_defaults()
+    out(art.section("EARTH-MOON-EARTH (MOONBOUNCE) LINK BUDGET", 89, color))
+    out(_c("  The Moon is a passive reflector: transmit on a band you are licensed for, hear your echo ~2.5 s later.",
+           art.GRAY, color=color))
+    bands = "/".join(eme.BANDS)
+    band = ask(f"  Band [{bands}] ({d['band']}): ", d["band"]).strip().lower()
+    f_hz = eme.BANDS.get(band, d["f_hz"])
+    try:
+        dish = float(ask(f"  Dish diameter in metres ({d['dish_m']:.1f}): ", "") or d["dish_m"])
+        pt = float(ask(f"  Transmit power in watts ({d['pt_w']:.0f}): ", "") or d["pt_w"])
+        tsys = float(ask(f"  System noise temperature in kelvin ({d['t_sys_k']:.0f}): ", "") or d["t_sys_k"])
+    except ValueError:
+        out(_c("  [!] numbers only, please. Using defaults.", art.GOLD, color=color))
+        dish, pt, tsys = d["dish_m"], d["pt_w"], d["t_sys_k"]
+
+    moon = eme.current_moon()
+    if moon.get("error"):
+        out(_c("  [!] could not read the Moon from Horizons: " + str(moon["error"]), art.RED, color=color))
+        return
+    home = moon.get("home") or home_location()
+    out(home_line(home, color))
+    if not home.get("set", True):
+        out(_c("  (set your home first with --set-home, or the Moon track is for 0N 0E)", art.GOLD, color=color))
+
+    b = eme.link_budget(f_hz, moon["range_km"], moon["range_rate_kms"] or 0.0, pt_w=pt, dish_m=dish,
+                        efficiency=d["efficiency"], t_sys_k=tsys, bw_hz=d["bw_hz"], integ_s=d["integ_s"],
+                        l_misc_db=d["l_misc_db"])
+    up = (moon["el"] or -99) > 0
+    out("")
+    out(_c(f"  MOON NOW   az {moon['az']:.0f} {hannibal_n2yo.compass(moon['az'])}  el {moon['el']:+.1f} deg   "
+           + (_c(art.sym('arrow') + ' up -- workable', art.GREEN, color=color) if up
+              else _c('below the horizon -- wait for moonrise', art.GOLD, color=color))
+           + f"   ({moon['as_of']} UT)", art.WHITE, color=color))
+    out(f"  Range {moon['range_km']:,.0f} km   round trip {b['round_trip_s']:.2f} s   "
+        f"range-rate {moon['range_rate_kms']:+.3f} km/s")
+    out("")
+    out(_c(f"  BAND {band} ({f_hz/1e6:.1f} MHz)   dish {dish:.1f} m @ {d['efficiency']:.0%}   "
+           f"Tx {pt:.0f} W   Tsys {tsys:.0f} K", art.GOLD, color=color))
+    out(f"    Tx power            {b['pt_dbm']:+7.1f} dBm")
+    out(f"    Dish gain (x2)      {b['g_tx_dbi']:+7.1f} dBi each")
+    out(f"    Path loss           {-b['l_path_db']:+7.1f} dB")
+    out(f"    Misc loss           {-b['l_misc_db']:+7.1f} dB   (feedline, Faraday/pol, pointing, atmosphere)")
+    out(f"    = Echo received     {b['pr_dbm']:+7.1f} dBm")
+    out(f"    Noise floor (2.5kHz){b['n_bw_dbm']:+7.1f} dBm   (Tsys {tsys:.0f} K)")
+    out(f"    Two-way Doppler     {b['doppler_hz']:+7.0f} Hz   (tune your SDR here; <0 = echo lower)")
+    out(f"    Echo depth spread   {b['echo_depth_ms']:7.1f} ms   (caps coherent bandwidth -> narrow modes)")
+    out(f"    Processing gain     {b['proc_gain_db']:+7.1f} dB    (B x tau = {b['bw_hz']:.0f} Hz x {b['integ_s']:.0f} s)")
+    out("")
+    snr = b["snr_ref_db"]
+    tag = art.GREEN if b["best_mode"] else art.RED
+    out(_c(f"  SNR in 2500 Hz reference: {snr:+.1f} dB", tag, color=color))
+    for name, thr in eme.MODE_THRESHOLDS:
+        mark = art.sym("arrow") + " " if snr >= thr else "   "
+        col = art.GREEN if snr >= thr else art.GRAY
+        out(_c(f"    {mark}{name:<16} needs >= {thr:+5.1f} dB", col, color=color))
+    out("")
+    if b["best_mode"]:
+        out(_c(f"  VERDICT: echo detectable -- best mode {b['best_mode']}.", art.GREEN, color=color))
+    else:
+        need = eme.MODE_THRESHOLDS[0][1] - snr
+        out(_c(f"  VERDICT: echo is {need:.1f} dB below even Q65. Bigger dish, more power, lower Tsys, or go up a band.",
+               art.GOLD, color=color))
+    out(_c("  Transmit only on bands and under a licence you hold. Figures are a model, not a guarantee.",
+           art.GRAY, color=color))
+
+
 MENU = [
     ("1", "Fleet telemetry        SatNOGS link health of your satellites", screen_fleet),
     ("2", "Re-entry watch         Space-Track DECAY + TIP predictions", screen_reentry),
@@ -842,6 +911,7 @@ MENU = [
     ("H", "Home window           Military + Globalstar satellites overhead now (N2YO)", screen_home),
     ("N", "N2YO satellites       look at any satellite: position, TLE, visual/radio passes", screen_n2yo),
     ("5", "Sky tonight            Sun, Moon & planets over your home (JPL Horizons)", screen_sky),
+    ("E", "Moonbounce (EME)       can you hear your own echo off the Moon? live link budget", screen_eme),
     ("6", "Ephemeris lookup       any planet, moon, asteroid or comet (Horizons)", screen_ephemeris),
     ("7", "Asteroid moons         browse every body with moons (JPL sb_sat)", screen_asteroid_moons),
     ("8", "Radar astrometry       JPL small-body radar delay/Doppler data", screen_radar),
@@ -1114,7 +1184,8 @@ def main(argv=None):
                            ("--decay", "re-entry watch (Space-Track)"), ("--conjunctions", "close approaches (Space-Track)"),
                            ("--boxscore", "catalogue box score (Space-Track)"), ("--status", "credentials / masking / cache"),
                            ("--home", "Military + Globalstar overhead now (N2YO)"), ("--moons", "browse asteroid/comet/TNO satellites (JPL sb_sat)"),
-                           ("--dashboard", "open the BlueGlobe dashboard"), ("--art", "Soviet space art gallery"), ("--feeder", "ADS-B feeder (asks for confirmation)")):
+                           ("--dashboard", "open the BlueGlobe dashboard"), ("--art", "Soviet space art gallery"), ("--feeder", "ADS-B feeder (asks for confirmation)"),
+                           ("--eme", "Earth-Moon-Earth moonbounce link budget (Horizons; no key)")):
         ap.add_argument(flag, action="store_true", help=helptext)
     ap.add_argument("--no-anim", action="store_true", help="skip the boot animation")
     ap.add_argument("--sat", metavar="NORAD", type=int, help="N2YO detail for one satellite (position, TLE, passes)")
@@ -1137,7 +1208,7 @@ def main(argv=None):
         if h.get("source") == "environment":
             print("  [~] note: HANNIBAL_HOME_LAT / _LON are set in your environment and take precedence over this file.")
         if not any(getattr(args, n) for n in ("scan", "sky", "home", "moons", "decay", "conjunctions", "boxscore",
-                                               "art", "status", "dashboard", "feeder")) and args.sat is None:
+                                               "art", "status", "dashboard", "feeder", "eme")) and args.sat is None:
             return 0
 
     color = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
@@ -1147,6 +1218,7 @@ def main(argv=None):
                  ("decay", lambda: screen_reentry(ask, print, color)), ("conjunctions", lambda: screen_conjunctions(ask, print, color)),
                  ("boxscore", lambda: screen_boxscore(ask, print, color)), ("art", lambda: screen_gallery(ask, print, color)), ("status", lambda: screen_status(ask, print, color)),
                  ("dashboard", lambda: print(sat_launch_dashboard()) or time.sleep(0.2)),
+                 ("eme", lambda: screen_eme(ask, print, color)),
                  ("feeder", lambda: screen_feeder(ask, print, color))]
     ran = False
     one_shots.append(("sat", lambda: _satellite_detail(args.sat, print, color)))

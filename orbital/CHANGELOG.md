@@ -3,6 +3,43 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-16] New: Moonbounce (EME) link budget -- `[E]` / `--eme`
+
+### What it is
+The Moon is a passive natural reflector. Transmit at it on an amateur band you are licensed for and
+~2.5 s later your own signal comes back, ~250-270 dB weaker. The new `hannibal_eme.py` works out whether
+your station could actually hear that echo, using the Moon's live range and range-rate over your home
+(JPL Horizons, the same source as `[5]` Sky tonight -- no key needed).
+
+### Added
+- **`hannibal_eme.py`** -- pure, testable physics:
+  - path loss `L = (4*pi)^3 R^4 / (lambda^2 * sigma)` with the Moon's radar cross-section (albedo ~6.5%);
+  - parabolic-dish gain `G = eta (pi D / lambda)^2`;
+  - two-way Doppler `f_d = -2 f0 v/c` (sign: receding Moon -> echo lower) to tune the SDR;
+  - thermal noise `N = k_B T_sys B` and coherent processing gain `10 log10(B*tau)`;
+  - SNR reported in a 2500 Hz reference bandwidth (the WSJT-X convention) and compared against the
+    published decode thresholds of Q65 / JT65 / FT8 / CW / SSB for an honest "can you hear it" verdict.
+  - `current_moon()` reads az/el, range and range-rate from Horizons through the masked, cached,
+    rate-limited `hannibal_net` layer.
+- **`[E]` menu entry and `--eme` flag** in `hannibal_orbital.py`: prompts for band, dish and power (sensible
+  23 cm defaults, overridable with `HANNIBAL_EME_*` env vars), then prints the full budget: Moon position
+  and whether it is up, range, round-trip time, every line of the link budget, the Doppler to tune to, the
+  echo-depth smear, and the mode ladder with the verdict.
+- **`test_hannibal_eme.py`** -- 6 offline tests pinning the physics (252/271 dB path loss, dish-gain f^2
+  scaling, Doppler sign and magnitude, 2.56 s round trip, 11.6 ms depth, noise floor, verdict flips).
+
+### Verified (offline + one live read)
+- All 6 tests pass. Live read over Antwerp (23 cm, 3 m dish @55%, 300 W, Tsys 100 K): echo received
+  ~-162 dBm against a ~-145 dBm noise floor -> SNR ~-17.6 dB in 2500 Hz -> detectable with Q65/JT65/FT8,
+  not CW by ear. A single 2 m yagi comes out ~-38 dB (no echo); a 10 m / 1 kW dish ~+13 dB (SSB-capable) --
+  all matching real-world EME experience.
+
+### Notes / not done
+- Transmit figures assume you hold the licence and may use the band. The verdict is a model, not a promise:
+  it does not include ground/sky-noise pointing geometry, the exact libration coherence time, or non-reciprocal
+  Tx/Rx paths. `l_misc` (default 4 dB) lumps feedline, Faraday/polarisation, pointing and atmosphere.
+- Depends on the home-location fix (needs `home_line` / `home.set`); stacked on that branch.
+
 ## [2026-10-16] Fix: "overhead now" was silently computed for 0N 0E
 
 ### What was wrong
