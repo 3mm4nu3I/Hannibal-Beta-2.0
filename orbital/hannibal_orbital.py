@@ -648,9 +648,12 @@ def _above_table(data, out, color, limit=8, numbered=False, show_observer=True):
         head = ("#   " if numbered else "") + f"{'NORAD':<6} {'NAME':<24} {'EL':>5} {'AZ':>4} {'ALT km':>7} {'GROUND km':>10}  OVER (lat, lon)"
         out(_c("  " + head, art.GOLD, color=color))
         for i, r in enumerate(rows, 1):
+            el_s = f"{r['el']:>5.1f}" if r.get("el") is not None else f"{'?':>5}"
+            alt_s = f"{r['alt_km']:>7,.0f}" if r.get("alt_km") is not None else f"{'?':>7}"
+            flag = "  [suspect TLE: altitude rejected]" if r.get("alt_suspect") else ""
             out(("  " + (f"{i:<3} " if numbered else "") +
-                 f"{r['norad']:<6} {r['name'][:24]:<24} {r['el']:>5.1f} {r['dir']:>4} {r['alt_km']:>7,.0f} {r['distance_km']:>10,}  "
-                 f"{r['lat']:+.1f}, {r['lon']:+.1f}"))
+                 f"{r['norad']:<6} {r['name'][:24]:<24} {el_s} {r['dir']:>4} {alt_s} {r['distance_km']:>10,}  "
+                 f"{r['lat']:+.1f}, {r['lon']:+.1f}" + flag))
         if data.get("count", 0) > len(rows):
             out(_c(f"  ... and {data['count'] - len(rows)} more (use [N] for the full list)", art.GRAY, color=color))
     elif not data.get("error"):
@@ -682,7 +685,8 @@ def _satellite_detail(norad, out, color):
         out(_c("  [~] " + n, art.GOLD, color=color))
     p = d["position"]
     if p:
-        out(f"  NOW      lat {p['lat']:+.2f}  lon {p['lon']:+.2f}  alt {p['alt_km']:,.0f} km   az {p['az']:.0f} {hannibal_n2yo.compass(p['az'])}  "
+        alt_disp = f"{p['alt_km']:,.0f} km" if p.get("alt_km") is not None else "? (suspect TLE)"
+        out(f"  NOW      lat {p['lat']:+.2f}  lon {p['lon']:+.2f}  alt {alt_disp}   az {p['az']:.0f} {hannibal_n2yo.compass(p['az'])}  "
             f"el {p['el']:+.1f}   " + (_c(art.sym("arrow") + " ABOVE YOUR HORIZON", art.GREEN, color=color) if p["up"] else "below the horizon") +
             f"   ({p['time']} UTC)")
     t = d["tle"]

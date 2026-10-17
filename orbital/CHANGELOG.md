@@ -3,6 +3,54 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-17] Fix: reject non-physical satellite altitudes from N2YO (overhead + detail)
+
+### The bug
+A live overhead run over Antwerp printed **USA 568 (NORAD 66551)** with an altitude of
+**2,408,092,187,602 km** (~2.4 trillion km, i.e. ~16,000 AU). That is not a real orbit and not a
+run-timing artifact: the `above` list takes `alt_km` straight from N2YO's `satalt` field
+(`hannibal_n2yo.above()`), evaluated at a single instant -- nothing is integrated "while the tally
+runs", and no real motion covers trillions of km in the ~15 s of a run. The cause is upstream: N2YO
+served a `satalt` propagated from a **degenerate / immature element set** -- near-zero mean motion, or
+eccentricity >= 1 (a parabolic/hyperbolic "escape" solution) -- which drives the derived altitude to
+absurd values. 66551's very high NORAD id is consistent with a freshly catalogued object whose TLE is
+not yet well fit. The module simply passed the number through, and because elevation is computed
+*locally* from that altitude, the bad object still got a plausible-looking elevation (27.9 deg) and
+sat in the list looking authoritative.
+
+### Fixed
+- **`hannibal_n2yo.py`** -- new `ALT_MAX_KM = 500,000` ceiling and `sane_alt_km(alt)` helper. Any
+  altitude that is missing, non-finite (NaN/inf), negative, or above the ceiling is treated as
+  unusable: `alt_km` becomes `None` and the row is flagged `alt_suspect=True`. The ceiling sits well
+  above every real orbit we carry (VELA pair ~160,000 km near apogee; the Moon itself is ~384,400 km)
+  so nothing legitimate is clipped, while 10^12 km is rejected outright.
+  - `above()`: suspect rows keep their identity, sub-point and ground distance (they are still "above"
+    per N2YO's own server-side filter) but get **no geometric elevation** (`el=None`, since a bad
+    altitude makes the elevation meaningless) and **sink to the bottom** of the list.
+  - `position()`: the `[S]` satellite-detail lookup flags a suspect altitude the same way. N2YO's own
+    reported elevation there is left untouched (it does not depend on `satalt`).
+- **`hannibal_orbital.py`** -- the overhead table and the satellite-detail screen now render a suspect
+  altitude/elevation as `?` and append `[suspect TLE: altitude rejected]`, instead of crashing on
+  `None` or printing a trillion-km figure as if it were real. Column alignment preserved.
+
+### Verified
+- **`test_hannibal_altguard.py`** (new, 5 offline tests, all pass): `sane_alt_km` accepts LEO/GEO/VELA/
+  lunar distances and rejects 2.4e12 km, the ceiling+0.1, negatives, NaN, inf and junk strings; the
+  ceiling boundary is inclusive; `above()` on a payload carrying the real USA 568 garbage row sets
+  `alt_km=None`/`alt_suspect=True`/`el=None`, keeps the row, and sorts it last; `position()` flags the
+  suspect altitude while preserving N2YO's elevation.
+- Existing `test_hannibal_eme.py` (6 tests) still pass -- no regression.
+- Render smoke-test: a two-row table (one good GEO, one suspect) prints the good row normally and the
+  suspect row as `?  ?  ... [suspect TLE: altitude rejected]` with columns aligned.
+
+### Not done / notes
+- The guard is a **display/ingestion** safeguard, not a TLE re-fit: it does not try to recover a correct
+  altitude for a bad element set, only to stop printing a false one. When N2YO later serves a sane
+  `satalt` for the object (once its orbit is fit), it shows normally with no code change.
+- `ALT_MAX_KM` is deliberately generous (0.5 Mm). If a genuine cislunar/deep-space object in a
+  monitored category ever needs to show, raise the ceiling or special-case it; today nothing we track
+  lives above it.
+
 ## [2026-10-16] New: Moonbounce (EME) link budget -- `[E]` / `--eme`
 
 ### What it is
