@@ -180,14 +180,42 @@ def shells(rows, when, params=None):
             "critical_count": ncrit,
             "cascade_index": n / ncrit if n and ncrit not in (0, float("inf")) else 0.0,
         })
+    for sh in out:
+        sh["multiplier_to_cross"] = multiplier_to_cross(sh["cascade_index"])
+        sh["robustness"] = robustness(sh["cascade_index"])
     return out
 
 
-def classify(index):
+def multiplier_to_cross(index):
+    """How many times larger k (fragments per collision) times tau (drag lifetime) must be for the shell
+    to reach index 1. The index is proportional to k * tau, so this is simply 1 / index (<= 1: already over)."""
+    return 1.0 / index if index > 0 else float("inf")
+
+
+def robustness(index):
+    """Plain-language sensitivity of a shell's status to the two roughest assumptions (k and tau)."""
+    m = multiplier_to_cross(index)
+    if m <= 1:
+        return "over even at these assumptions" if m <= 0.5 else "over, but within 2x of the line"
+    if m <= 2:
+        return "crosses if k or tau is 2x higher"
+    if m <= 10:
+        return "crosses only if k*tau is 2-10x higher"
+    return "far from the line (>10x)"
+
+
+SELF_CLEANING_YEARS = 50   # a shell drag empties within about half a century
+
+
+def classify(index, tau_years=None):
+    """Band label. Low-index shells are 'self-cleaning' only when drag actually clears them;
+    a low-index shell with a long lifetime is 'quiet (slow to clear)', not self-cleaning."""
     if index >= 1.0:
         return "OVER THE LINE"
     if index >= 0.25:
         return "accumulating"
+    if tau_years is not None and tau_years > SELF_CLEANING_YEARS:
+        return "quiet (slow to clear)" if index < 0.1 else "calm"
     return "self-cleaning" if index < 0.1 else "calm"
 
 
@@ -227,22 +255,26 @@ def format_report(result):
         f"payloads {t.get('PAY', 0):,}  debris {t.get('DEB', 0):,}  rocket stages {t.get('R/B', 0):,}",
         "  Constellations: " + ", ".join(f"{k} {v:,}" for k, v in s["constellations"].items()),
         "",
-        f"  {'shell km':>11} {'objects':>8} {'sats':>6} {'debris':>7} {'coll/yr*':>9} {'drag yrs':>9} {'index':>6}  band",
+        f"  {'shell km':>11} {'objects':>8} {'sats':>6} {'debris':>7} {'coll/yr*':>9} {'drag yrs':>9} {'index':>6} {'x cross':>8}  band",
     ]
     for sh in result["shells"]:
         if not sh["objects"]:
             continue
         lines.append(f"  {sh['lo_km']:>5}-{sh['hi_km']:<5} {sh['objects']:>8,} {sh['payloads']:>6,} {sh['debris']:>7,} "
                      f"{sh['collisions_per_year_unmanaged']:>9.4f} {sh['drag_lifetime_years']:>9,.0f} "
-                     f"{sh['cascade_index']:>6.2f}  {classify(sh['cascade_index'])}")
+                     f"{sh['cascade_index']:>6.2f} {_fmt_mult(sh['multiplier_to_cross']):>8}  {classify(sh['cascade_index'], sh['drag_lifetime_years'])}")
     busiest = max(result["shells"], key=lambda x: x["objects"])
     over = [f"{x['lo_km']}-{x['hi_km']}" for x in result["shells"] if x["cascade_index"] >= 1]
+    near = [f"{x['lo_km']}-{x['hi_km']}" for x in result["shells"] if 0.5 <= x["cascade_index"] < 1]
     lines += [
-        "  * collisions per year if nobody manoeuvred",
+        "  * collisions per year if nobody manoeuvred.  x cross = how many times larger k (fragments per collision)",
+        "    times tau (drag lifetime) would have to be for the shell to reach index 1.",
         "",
         f"  Busiest shell {busiest['lo_km']}-{busiest['hi_km']} km: {busiest['objects']:,} objects, "
         f"index {busiest['cascade_index']:.2f} (drag clears it in ~{busiest['drag_lifetime_years']:.0f} y).",
         "  Shells over the line: " + (", ".join(over) + " km" if over else "none"),
+        "  Within 2x of the line: " + (", ".join(near) + " km" if near else "none")
+        + "  (the 2009 Iridium-Cosmos collision alone produced over 2,000 catalogued fragments)",
         "",
         "  Breakups with the most tracked debris still in orbit:",
     ]
@@ -256,6 +288,12 @@ def format_report(result):
         "rough drag lifetimes, tracked objects only, no manoeuvring. Compare altitudes; not a forecast.",
     ]
     return "\n".join(lines)
+
+
+def _fmt_mult(m):
+    if m == float("inf"):
+        return "-"
+    return "over" if m <= 1 else (f"{m:.1f}x" if m < 100 else f"{m:,.0f}x")
 
 
 def screen_kessler(ask, print_fn, color=False):
