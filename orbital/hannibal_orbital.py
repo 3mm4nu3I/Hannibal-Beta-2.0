@@ -878,6 +878,17 @@ try:
 except Exception:  # noqa: BLE001
     hannibal_theorem = None
 
+# --- Kessler cascade watch (added 2026-10-22, proof of concept) ---------------------------------------
+# [D] screen: tracked objects per 50 km shell from the public CelesTrak catalog, with a simple cascade
+# index (objects / count at which collision fragments outpace drag cleanup). Receive-only, no key.
+try:
+    import hannibal_kessler
+    MENU.insert(next(i for i, m in enumerate(MENU) if m[0] == "G"),
+                ("D", "Debris cascade         Kessler watch: objects per altitude shell, cascade index (CelesTrak)",
+                 hannibal_kessler.screen_kessler))
+except Exception:  # noqa: BLE001
+    hannibal_kessler = None
+
 
 def run_menu(input_fn=None, print_fn=print, color=None, animate=False, logins=None, home=None, secret_fn=None):
     """Interactive menu loop. input_fn / print_fn are injectable so the menu is testable.
@@ -1094,7 +1105,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="hannibal_orbital", description="Hannibal Orbital Directorate")
     for flag, helptext in (("--scan", "scan SatNOGS and write telemetry_report.json"), ("--sky", "sky over home (Horizons)"),
                            ("--decay", "re-entry watch (Space-Track)"), ("--conjunctions", "close approaches (Space-Track)"),
-                           ("--boxscore", "catalogue box score (Space-Track)"), ("--status", "credentials / masking / cache"),
+                           ("--boxscore", "catalogue box score (Space-Track)"), ("--kessler", "debris cascade watch (CelesTrak catalog)"), ("--status", "credentials / masking / cache"),
                            ("--home", "Military + Globalstar overhead now (N2YO)"), ("--moons", "browse asteroid/comet/TNO satellites (JPL sb_sat)"),
                            ("--dashboard", "open the BlueGlobe dashboard"), ("--art", "Soviet space art gallery"), ("--feeder", "ADS-B feeder (asks for confirmation)")):
         ap.add_argument(flag, action="store_true", help=helptext)
@@ -1108,7 +1119,7 @@ def main(argv=None):
     one_shots = [("scan", lambda: rt.main()), ("sky", lambda: screen_sky(ask, print, color)),
                  ("home", lambda: screen_home(ask, print, color)), ("moons", lambda: screen_asteroid_moons(ask, print, color)),
                  ("decay", lambda: screen_reentry(ask, print, color)), ("conjunctions", lambda: screen_conjunctions(ask, print, color)),
-                 ("boxscore", lambda: screen_boxscore(ask, print, color)), ("art", lambda: screen_gallery(ask, print, color)), ("status", lambda: screen_status(ask, print, color)),
+                 ("boxscore", lambda: screen_boxscore(ask, print, color)), ("kessler", lambda: hannibal_kessler and hannibal_kessler.screen_kessler(ask, print, color)), ("art", lambda: screen_gallery(ask, print, color)), ("status", lambda: screen_status(ask, print, color)),
                  ("dashboard", lambda: print(sat_launch_dashboard()) or time.sleep(0.2)),
                  ("feeder", lambda: screen_feeder(ask, print, color))]
     ran = False
