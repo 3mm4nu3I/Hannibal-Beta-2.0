@@ -17,6 +17,7 @@ The 17 Oct satellite detail export lists 148 military objects above Antwerp (an 
 - `zombie_targets_2026-10-17.json`: the 148 NORAD ids and names from section A of the export, in its elevation order (the default target list; no positions, they go stale in minutes). `--above` uses what N2YO lists overhead at run time instead.
 - `test_hannibal_zombie.py`: offline tests on trimmed real SatNOGS records and a fake network (tiers, window and foreign rows, page cap, unchecked, DB outage, paginated DB form).
 - `hannibal_net.py`: `db.satnogs.org` gets its own limit (1 s spacing). `hannibal_terminal.spec`: `hannibal_zombie` and the target list are bundled into the .exe.
+- **ERS 15 (2412) on the fleet watch list** (`norad_targets.json`), so `[1] Fleet telemetry`, `[L]` and `--scan` check it every run. First scan, 24 h window: `UNVETTED` (one observation from that morning still awaiting vetting). Over 30 days: 2 good, 5 bad, 15 unvetted, 5 station failures, i.e. `LOW SAMPLE`, 29% (95% range 8-64%). Expect `NO PASSES` or `UNVETTED` on most 24 h scans: it is only heard now and then. `python hannibal_zombie.py --ids 2412` gives the 30-day view.
 
 ### Verified
 - Live, 22 Oct 2026 ~18:40 UTC, 30-day window, all 148 targets (12 s cold, 0.1 s cached): **HEARD 2 of 148, with an uplink on record 0.**

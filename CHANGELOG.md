@@ -6,6 +6,7 @@ Per-module detail lives next to the module (e.g. orbital/CHANGELOG_telemetry.md)
 ## 2026-10-22 (evening) — Zombie check (`[Z]`)
 - New `[Z] Zombie check` (`orbital/hannibal_zombie.py`, `--zombie`): for a list of satellites, which ones still transmit something an amateur station can hear, from the SatNOGS DB (transmitters on record) and Network (vetted observations in the last 30 days). Default list: the 148 military objects in the 17 Oct Antwerp export. Receive-only, no key.
 - Result, live 22 Oct 2026: **2 of 148 heard** (COSMOS 2488 on UHF FM; ERS 15, launched 1966, on a 136.439 MHz CW carrier), **0 with an uplink on record**. 142 have no transmitter known to the amateur network.
+- ERS 15 added to the fleet watch list (`orbital/norad_targets.json`), so every fleet telemetry scan now checks it. First scan: UNVETTED (one observation awaiting vetting); 30 days: 2 good of 7 vetted, LOW SAMPLE.
 - Tests: `orbital/test_hannibal_zombie.py` passes offline; every other orbital test and the root fixtures still pass.
 - Full detail and limits: orbital/CHANGELOG.md
 
