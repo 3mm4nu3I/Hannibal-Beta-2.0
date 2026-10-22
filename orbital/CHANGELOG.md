@@ -3,6 +3,34 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-22, evening] Zombie check (`[Z]`)
+
+### Why
+The 17 Oct satellite detail export lists 148 military objects above Antwerp (an earlier run gave ~135). Those are N2YO positions computed from orbital elements: a satellite that died in 1966 and one that works today look identical in that list. `[Z]` answers the other question, whether anything on them still transmits, with measured evidence instead of a guess.
+
+### Added
+- **`hannibal_zombie.py` + `[Z] Zombie check`** (also `python hannibal_orbital.py --zombie` or `python hannibal_zombie.py [--ids ... | --file ... | --above] [--days 30] [--all] [--json out.json]`). Receive-only, no key, every call through `hannibal_net`.
+  - Two full-list pulls from the SatNOGS DB (satellites and transmitters, cached 24 h), then SatNOGS Network vetted `good` and `bad` observations, only for objects that have a transmitter on record (cached 1 h, window start rounded to the hour so the cache can hit).
+  - Tiers per object: `HEARD` (a vetted good observation in the window), `LISTED, NOT HEARD` (active transmitter on record, nothing heard), `NO ACTIVE TX`, `NOT IN SATNOGS`, and `NOT CHECKED` when the network could not be asked. Any `NOT CHECKED` turns the verdict into a lower bound ("at least") and the exit code into 2; a DB outage is an error, never a silent zero.
+  - `UPLINK` column: whether any transmitter on record has an uplink (type Transceiver or Transponder). A relay needs one.
+  - Filters are applied again locally (status, object, window), so a server that ignored a filter could not inflate a count. A full page (25) shows as `25+`.
+- `zombie_targets_2026-10-17.json`: the 148 NORAD ids and names from section A of the export, in its elevation order (the default target list; no positions, they go stale in minutes). `--above` uses what N2YO lists overhead at run time instead.
+- `test_hannibal_zombie.py`: offline tests on trimmed real SatNOGS records and a fake network (tiers, window and foreign rows, page cap, unchecked, DB outage, paginated DB form).
+- `hannibal_net.py`: `db.satnogs.org` gets its own limit (1 s spacing). `hannibal_terminal.spec`: `hannibal_zombie` and the target list are bundled into the .exe.
+
+### Verified
+- Live, 22 Oct 2026 ~18:40 UTC, 30-day window, all 148 targets (12 s cold, 0.1 s cached): **HEARD 2 of 148, with an uplink on record 0.**
+  - COSMOS 2488 (39483, launched 2013): 9 good, 0 bad, last 21 Oct 12:45 UTC, UHF FM 388.687 MHz.
+  - ERS 15 (2412, launched 1966): 2 good, 5 bad, last 26 Sep 12:40 UTC, CW carrier 136.439 MHz. The one true 1960s survivor on the list, and it is a carrier, not a transponder.
+  - LISTED, NOT HEARD: USA 184, YAOGAN 10, YAOGAN 12. NO ACTIVE TX: USA 198 (SDS-3 F-5). NOT IN SATNOGS: 142.
+- The same numbers as a hand check with plain HTTP requests against both APIs. All orbital tests pass; the subsea/spatial and evidence-confidence fixtures still pass; `[Z]` driven through `run_menu`; menu is `1 2 3 4 H N 5 6 7 8 9 W Z D G F K I M R T S A Q`.
+
+### Not done / limits
+- SatNOGS only knows transmitters amateurs have found and logged. `NOT IN SATNOGS` means no amateur-known transmitter, not proof the satellite is dead; military links on bands amateurs don't monitor (or encrypted) never show up here. For the question "is there anything an amateur station can use", that distinction does not change the answer.
+- `LISTED, NOT HEARD` can also mean no volunteer station scheduled that pass in the window.
+- `HEARD` is evidence of a working transmitter, not of a link anyone can command.
+- Not built on Windows here: the `.exe` needs `build.bat`. Noticed while editing the spec: `hannibal_neo` and `hannibal_kessler` are not in its hidden imports, so `[W]` and `[D]` may be missing from a built `.exe` (they work from source). Left as it was.
+
 ## [2026-10-22, later] Where it won't be (`[W]`) and Kessler sensitivity
 
 Backups first: branch `backup/main-2026-10-22-pre-neo` (main at 56cb371) and a full git bundle.

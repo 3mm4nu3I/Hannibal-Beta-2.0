@@ -45,6 +45,7 @@ HOST_LIMITS = {
     "ssd.jpl.nasa.gov": {"min_interval": 1.0},
     "ssd-api.jpl.nasa.gov": {"min_interval": 1.0},
     "network.satnogs.org": {"min_interval": 0.3},
+    "db.satnogs.org": {"min_interval": 1.0},   # two full-list pulls per day at most (cached 24 h)
     "api.satellitemap.space": {"min_interval": 2.0},   # feed docs: accepts updates every >=2 s
     "api.n2yo.com": {"min_interval": 0.5, "per_hour": 900},  # docs: 1000/h (tle, positions), 100/h (passes, above)
     "ipapi.co": {"min_interval": 1.0, "per_hour": 500},

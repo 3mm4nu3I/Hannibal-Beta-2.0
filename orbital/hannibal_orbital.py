@@ -900,6 +900,17 @@ try:
 except Exception:  # noqa: BLE001
     hannibal_neo = None
 
+# --- Zombie check (added 2026-10-22) --------------------------------------------------------------------
+# [Z] screen: which satellites on a list still transmit something an amateur station can hear, from the
+# SatNOGS DB (transmitters on record) and Network (vetted "good" observations). Receive-only, no key.
+try:
+    import hannibal_zombie
+    MENU.insert(next(i for i, m in enumerate(MENU) if m[0] == "D"),
+                ("Z", "Zombie check          which satellites overhead still transmit (SatNOGS evidence)",
+                 hannibal_zombie.screen_zombie))
+except Exception:  # noqa: BLE001
+    hannibal_zombie = None
+
 
 def run_menu(input_fn=None, print_fn=print, color=None, animate=False, logins=None, home=None, secret_fn=None):
     """Interactive menu loop. input_fn / print_fn are injectable so the menu is testable.
@@ -1116,7 +1127,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="hannibal_orbital", description="Hannibal Orbital Directorate")
     for flag, helptext in (("--scan", "scan SatNOGS and write telemetry_report.json"), ("--sky", "sky over home (Horizons)"),
                            ("--decay", "re-entry watch (Space-Track)"), ("--conjunctions", "close approaches (Space-Track)"),
-                           ("--boxscore", "catalogue box score (Space-Track)"), ("--kessler", "debris cascade watch (CelesTrak catalog)"), ("--status", "credentials / masking / cache"),
+                           ("--boxscore", "catalogue box score (Space-Track)"), ("--kessler", "debris cascade watch (CelesTrak catalog)"), ("--zombie", "which of the 17 Oct military list still transmit (SatNOGS)"), ("--status", "credentials / masking / cache"),
                            ("--home", "Military + Globalstar overhead now (N2YO)"), ("--moons", "browse asteroid/comet/TNO satellites (JPL sb_sat)"),
                            ("--dashboard", "open the BlueGlobe dashboard"), ("--art", "Soviet space art gallery"), ("--feeder", "ADS-B feeder (asks for confirmation)")):
         ap.add_argument(flag, action="store_true", help=helptext)
@@ -1137,6 +1148,7 @@ def main(argv=None):
     ran = False
     one_shots.append(("sat", lambda: _satellite_detail(args.sat, print, color)))
     one_shots.append(("neo", lambda: hannibal_neo and print(hannibal_neo.report(args.neo))))
+    one_shots.append(("zombie", lambda: hannibal_zombie and print(hannibal_zombie.report())))
     needs_keys = ("scan", "decay", "conjunctions", "boxscore", "home", "sat", "dashboard")
     if any(getattr(args, n) for n in needs_keys) and not args.no_login:
         # one-shot flags that talk to Space-Track / N2YO: ask once if the login is missing (the menu asks for itself)
