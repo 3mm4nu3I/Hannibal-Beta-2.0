@@ -3,6 +3,24 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-22] Kessler cascade watch (proof of concept)
+
+### Added
+- **`hannibal_kessler.py` + `[D] Debris cascade`** (also `python hannibal_orbital.py --kessler` or `python hannibal_kessler.py`): reads the public CelesTrak satellite catalog (no key, receive-only, one download cached 12 h through `hannibal_net`) and reports
+  - a snapshot of what is in orbit: by type, working satellites, Starlink / OneWeb / Kuiper counts;
+  - growth by year since 1960 (in `--json` output);
+  - tracked objects per 50 km altitude shell with an unmanaged collision rate, a rough drag lifetime and a **cascade index**: objects in the shell divided by the count at which collision fragments would arrive faster than drag clears them (`N_crit = 2V / (k·σ·v·τ)`);
+  - the breakups that left the most tracked debris still in orbit;
+  - the energy of a 1 cm aluminium fragment at 10 km/s (~71 kJ, about 20 rifle rounds).
+- `test_hannibal_kessler.py`: offline tests (parsing, on-orbit dating, shell binning, lifetime interpolation, the threshold identity, report).
+
+### Verified
+- Tests pass; `hannibal_orbital.py` compiles; the `[D]` screen runs through `run_menu` with injected input; a live fetch through `hannibal_net` works.
+- Against the 22 Oct 2026 catalog: 35,046 objects in orbit, 17,256 working satellites, 11,151 Starlink. The 450-500 km shell holds 10,386 objects but has index 0.06 (drag clears it in ~5 years). Index passes 1 at 1,150-1,200 km and 1,400-1,600 km.
+
+### Not done / limits
+- The model is deliberately simple: k = 100 trackable fragments per collision, 10 km/s, catalog radar cross-section as collision area, rough average-solar-activity lifetimes, no manoeuvring, tracked objects only. Use the index to compare altitudes, not as a forecast. `--fragments` and `--speed` change the two main assumptions.
+
 ## [2026-10-11] Integration: one Orbital Directorate, everything merged
 
 ### Sources that were merged
