@@ -54,7 +54,20 @@ rate = k.collisions_per_year(n, 1.0, vol, 10)
 assert abs(100 * rate - n / 5) / (n / 5) < 1e-9
 
 assert k.classify(1.2) == "OVER THE LINE" and k.classify(0.5) == "accumulating" and k.classify(0.05) == "self-cleaning"
+# low index + long drag lifetime is quiet, not self-cleaning
+assert k.classify(0.05, tau_years=5) == "self-cleaning" and k.classify(0.05, tau_years=15000) == "quiet (slow to clear)"
+assert k.classify(0.15, tau_years=500) == "calm"
+# sensitivity: index is proportional to k*tau, so the multiplier to cross is 1/index
+assert k.multiplier_to_cross(0.25) == 4.0 and k.multiplier_to_cross(0) == float("inf")
+assert abs(k.multiplier_to_cross(0.79) - 1 / 0.79) < 1e-12
+assert k.robustness(1.5) == "over, but within 2x of the line" and k.robustness(3) == "over even at these assumptions"
+assert k.robustness(0.6) == "crosses if k or tau is 2x higher" and k.robustness(0.01) == "far from the line (>10x)"
+# doubling k doubles every index (the identity the multiplier relies on)
+base = {s["lo_km"]: s["cascade_index"] for s in k.shells(rows, "2026-10-22")}
+dbl = {s["lo_km"]: s["cascade_index"] for s in k.shells(rows, "2026-10-22", {"fragments_per_collision": 200})}
+assert all(abs(dbl[x] - 2 * base[x]) < 1e-12 for x in base)
+assert sh[850]["multiplier_to_cross"] == 1 / sh[850]["cascade_index"]
 assert k.breakups(rows, "2026-10-22") == [("FENGYUN 1C", 2)]
 assert "KESSLER CASCADE WATCH" in k.format_report(k.analyse(rows, "2026-10-22"))
 
-print("PASS: hannibal_kessler (snapshot, growth, shells, physics, threshold, report)")
+print("PASS: hannibal_kessler (snapshot, growth, shells, physics, threshold, sensitivity, labels, report)")

@@ -3,6 +3,29 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-22, later] Where it won't be (`[W]`) and Kessler sensitivity
+
+Backups first: branch `backup/main-2026-10-22-pre-neo` (main at 56cb371) and a full git bundle.
+
+### Added
+- **`hannibal_neo.py` + `[W] Where it won't be`** (also `python hannibal_orbital.py --neo 99942` or `python hannibal_neo.py "2024 YR4"`): Earth-impact exclusion for any asteroid or comet. Three NASA/JPL calls through `hannibal_net` (close approaches to 2200 within 0.05 au, Sentry, Small-Body Database), cached 6 h, no key.
+  - Each pass: nominal distance, JPL's 3-sigma nearest and farthest distance, window width, clearance above the atmosphere (equatorial radius + 100 km) at the nearest edge, whether it passes inside GEO. `EXCLUDED` when the nearest edge stays above the atmosphere. Rows whose window is wider than the distance are marked `~rough`.
+  - Overall verdict defers to Sentry. Listed -> `NOT EXCLUDED` with JPL's impact count, years and cumulative probability, even when every pass clears Earth (keyhole case). Removed or never listed and every pass clear -> `EXCLUDED`. Sentry unreachable or close-approach data missing -> `NO DATA`, never an all-clear.
+  - Rows for any other object than the one asked for are refused. An unknown name gets "JPL does not recognise", not "unavailable".
+- **Kessler sensitivity** in `[D]`: `x cross` column = how many times larger k (fragments per collision) x tau (drag lifetime) would have to be for the shell to reach index 1. Because the index is proportional to k x tau this is exactly 1 / index. The summary lists shells within 2x of the line.
+- `test_hannibal_neo.py` (offline, trimmed real JPL payloads and a fake network); `test_hannibal_kessler.py` extended.
+
+### Changed
+- Kessler band labels: a low-index shell with a drag lifetime over 50 years is `quiet (slow to clear)`, not `self-cleaning` (650-750 km and above 1,750 km were mislabelled).
+
+### Verified
+- Live, 22 Oct 2026: Apophis EXCLUDED (2029 pass 38,011 km, window 6.6 km, 31,530 km above the atmosphere; Sentry removed 2021-02-21). Bennu NOT EXCLUDED (every pass to 2200 clears Earth, 2135 at 204,041 km; Sentry: 157 impacts 2178-2290, about 1 in 1,749). Eros EXCLUDED (no pass within 0.05 au, never listed). 2024 YR4 EXCLUDED (Sentry removed 2026-03-05; 2032-Dec-22 at 278,333 km). `zzzz9` refused as unrecognised.
+- Kessler on the 22 Oct catalog: the 450-500 km Starlink shell would need 16.5x worse assumptions to cross; 750-950 km need 6-9x; 950-1,000 km and 1,200-1,250 km are within 1.3x; 1,150-1,200 km and 1,400-1,600 km are over.
+- All orbital tests pass; `hannibal_orbital.py` compiles; `[W]` and `[D]` driven through `run_menu`; repo fixtures unchanged.
+
+### Not done / limits
+- `[W]` uses JPL's linearised 3-sigma close-approach bounds. It does not propagate orbits or map keyholes itself; that is what Sentry is for, and why the verdict defers to it.
+
 ## [2026-10-22] Kessler cascade watch (proof of concept)
 
 ### Added

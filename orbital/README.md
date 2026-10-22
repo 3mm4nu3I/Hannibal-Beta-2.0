@@ -23,7 +23,8 @@
 | Key | What | Who |
 |---|---|---|
 | `HANNIBAL_NORMAL.bat` / `HANNIBAL_LOW_INTERNET.bat` | start with the normal or the bad-connection network profile | everyone |
-| `[D]` Debris cascade (new 2026-10-22) | Kessler watch from the public CelesTrak catalog: objects per 50 km shell, drag cleanup time, cascade index. No key. `python hannibal_kessler.py` | everyone |
+| `[W]` Where it won't be (new 2026-10-22) | Earth-impact exclusion for any asteroid or comet from NASA/JPL: every close approach to 2200, nearest edge of the uncertainty window vs the atmosphere, verdict defers to JPL Sentry. No key. `python hannibal_neo.py 99942` | everyone |
+| `[D]` Debris cascade (new 2026-10-22) | Kessler watch from the public CelesTrak catalog: objects per 50 km shell, drag cleanup time, cascade index, and how far the assumptions must move before each shell crosses the line. No key. `python hannibal_kessler.py` | everyone |
 | `[1]` Fleet telemetry | evidence-gated link health: LOW SAMPLE under 8 observations, 95% ranges, stale TLE in red, `*` = last known value | everyone |
 | `[M]` Macro (FRED) | CPI, core PCE, rates, curve, M2 velocity, Brent, dollar. Key: `python hannibal_fred.py --set-key` | everyone |
 | `[R]` Market brain [DEV] | what the market is thinking: ten lobes, live transmission paths, in your browser (127.0.0.1 only) | developers |

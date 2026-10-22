@@ -889,6 +889,17 @@ try:
 except Exception:  # noqa: BLE001
     hannibal_kessler = None
 
+# --- Where it won't be (added 2026-10-22) ---------------------------------------------------------------
+# [W] screen: Earth-impact exclusion for any asteroid or comet from NASA/JPL close-approach data, with the
+# overall verdict deferring to JPL Sentry (a clean pass can still lead through a keyhole to a later impact).
+try:
+    import hannibal_neo
+    MENU.insert(next(i for i, m in enumerate(MENU) if m[0] == "D"),
+                ("W", "Where it won't be     impact exclusion for any asteroid or comet (JPL CNEOS + Sentry)",
+                 hannibal_neo.screen_neo))
+except Exception:  # noqa: BLE001
+    hannibal_neo = None
+
 
 def run_menu(input_fn=None, print_fn=print, color=None, animate=False, logins=None, home=None, secret_fn=None):
     """Interactive menu loop. input_fn / print_fn are injectable so the menu is testable.
@@ -1111,6 +1122,7 @@ def main(argv=None):
         ap.add_argument(flag, action="store_true", help=helptext)
     ap.add_argument("--no-anim", action="store_true", help="skip the boot animation")
     ap.add_argument("--sat", metavar="NORAD", type=int, help="N2YO detail for one satellite (position, TLE, passes)")
+    ap.add_argument("--neo", metavar="DES", help="where it won't be: impact exclusion for one asteroid/comet (JPL)")
     ap.add_argument("--no-login", action="store_true", help="do not ask for the Space-Track login / N2YO key")
     args = ap.parse_args(argv)
 
@@ -1124,6 +1136,7 @@ def main(argv=None):
                  ("feeder", lambda: screen_feeder(ask, print, color))]
     ran = False
     one_shots.append(("sat", lambda: _satellite_detail(args.sat, print, color)))
+    one_shots.append(("neo", lambda: hannibal_neo and print(hannibal_neo.report(args.neo))))
     needs_keys = ("scan", "decay", "conjunctions", "boxscore", "home", "sat", "dashboard")
     if any(getattr(args, n) for n in needs_keys) and not args.no_login:
         # one-shot flags that talk to Space-Track / N2YO: ask once if the login is missing (the menu asks for itself)

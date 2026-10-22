@@ -3,6 +3,14 @@
 Newest first. Each entry says what changed, why, and what was and was not verified.
 Per-module detail lives next to the module (e.g. orbital/CHANGELOG_telemetry.md).
 
+## 2026-10-22 — Where it won't be (`[W]`), Kessler sensitivity, and the day's merges
+- Backups before this work: branch `backup/main-2026-10-22-pre-neo` (main at 56cb371) and a full git bundle of every branch, sent separately. Earlier today: branch `backup/bat-crlf-2026-10-22` (main at 8fe8a4a) before the line-ending fix.
+- New `[W] Where it won't be` (`orbital/hannibal_neo.py`, `--neo DES`): Earth-impact exclusion for any asteroid or comet from NASA/JPL close-approach data. Each pass is checked against Earth plus 100 km of atmosphere at the nearest edge of JPL's 3-sigma window. The overall verdict always defers to JPL Sentry, because a pass that clears Earth can still lead through a keyhole to a later impact (Bennu is the worked example). Receive-only, no key.
+- `[D] Debris cascade` now says how robust each shell's status is: the factor by which the two roughest assumptions (fragments per collision, drag lifetime) would have to be off before the shell crosses the line. Long-lived, low-index shells are labelled "quiet (slow to clear)" instead of "self-cleaning".
+- Merged today: #6 Kessler cascade watch (`[D]`, `--kessler`), #7 the three orbital `.bat` launchers stored with LF like every other `.bat` (checkout still gives CRLF; working trees are no longer shown as modified).
+- Tests: `orbital/test_hannibal_neo.py` and `orbital/test_hannibal_kessler.py` pass offline; the existing subsea/spatial and evidence-confidence fixtures still pass. `[W]` and `[D]` driven through `run_menu`; live runs on Apophis, Bennu, Eros, 2024 YR4 and an invalid name.
+- Full detail: orbital/CHANGELOG.md
+
 ## 2026-10-11 — Orbital Directorate integrated into main (+ FRED, market brain, happiness theorem)
 - `orbital/` is now the complete, merged Orbital Directorate: your running Desktop copy + the GEOINT update (TELECOM3) + `hannibal_estimation.py` + the security patch + the Earth-export hook + telemetry 1.2.0. Everything applied cleanly; nothing removed.
 - New: `[M]` Macro (FRED, key in the OS credential store), `[R]` Market brain [DEV], `[T]` Happiness theorem [DEV] with a THEOREM card on the brain page. Developer-only behind a PBKDF2 key gate, local-only server, single-use launch code, strict CSP, breach log.
