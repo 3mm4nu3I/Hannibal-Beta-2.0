@@ -2,7 +2,7 @@
 
 An independent amateur check, by Project Hannibal, of whether there is real reason for concern about 99942 Apophis. This file is written **before** the results it judges. Git records when each line was committed, so nobody (us included) can move the goalposts afterwards.
 
-Registered: 23 Oct 2026. Investigators: Project Hannibal (Bram).
+Registered: 23 Oct 2026 (commit 36f3703 at 21:03 UTC). Investigators: Project Hannibal (Bram). Git commit times are the authoritative timestamps; the times written in section headings point to them.
 
 ## 1. Question
 
@@ -31,7 +31,7 @@ The sealed statement should say what we expect the data to show, and by when. Th
 
 Raw replies, hashes and the analysis for each run are kept in `evidence/<UTC stamp>/` (see `SHA256SUMS` and `manifest.json` there).
 
-### Worst-case rule (added 23 Oct 2026, 21:45 UTC, at the investigators' request)
+### Worst-case rule (added 23 Oct 2026, commit 5466d4a at 21:30 UTC, at the investigators' request)
 
 Every judgement uses the worst case the data allows:
 - **Distances:** the nearest 3-sigma edge, never the nominal.
@@ -50,7 +50,7 @@ Any one of these, from professional data, counts. Each one is checked automatica
 - **C4 Lisbon:** the impossible-event test off Lisbon returns POSSIBLE.
 - **C5 Orbit shift:** a new JPL orbit solution moves the 2029 nominal distance by more than 3 sigma of solution 220 (3 × 1.1 km).
 
-### 4b. Named hypothesis H-A: Apophis is artificial or under control (added 23 Oct 2026, 21:20 UTC)
+### 4b. Named hypothesis H-A: Apophis is artificial or under control (added 23 Oct 2026, commit 5ed4897 at 21:24 UTC)
 
 Reason for adding it: the investigators stated this hypothesis openly, linking 'Oumuamua (2017, "the test") to Apophis's 2029 pass inside the geostationary ring ("the follow-up"). It is recorded here before any data was collected to test it.
 
@@ -76,7 +76,7 @@ H-A is refuted if, by the end of the spacecraft missions' first close-up imaging
 
 H-A is supported only by a C6, C7 or C8 result that survives the checks in section 7. One unconfirmed observation is not support.
 
-### 4c. The 2029 model test (added 23 Oct 2026, 22:00 UTC)
+### 4c. The 2029 model test (added 23 Oct 2026, commit 65431af at 21:42 UTC)
 
 The 2029 flyby is the first close pass of an object this size that was predicted years ahead. It tests the models themselves. These are today's predictions, frozen here and scored after the flyby against the reconstructed orbit, which will be fitted with the flyby's own observations, radar and spacecraft tracking:
 
@@ -92,7 +92,7 @@ How it is scored:
 - **Model wrong:** they fall outside. That would mean the orbit models, the uncertainty estimates or the force models (Yarkovsky) were off. It would be worth publishing either way.
 - **Also recorded:** any change to Apophis's spin or surface from Earth's tides that the spacecraft report, set against the predictions published before April 2029.
 
-### 4d. The bet (recorded 23 Oct 2026, 22:10 UTC)
+### 4d. The bet (recorded 23 Oct 2026, commit d0b7730 at 21:46 UTC)
 
 Two predictions for the closest approach on 13 April 2029, settled by the reconstructed orbit after the flyby. The stake is reputation: whoever is wrong has it in this repository for good.
 
