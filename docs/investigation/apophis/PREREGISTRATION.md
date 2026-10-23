@@ -106,6 +106,11 @@ Notes, recorded now so nobody can reinterpret them later:
 - Bram's range sits about 9,000 to 10,000 km below the current prediction, which is several thousand times JPL's stated uncertainty. If it is right, the models were wrong. The daily brief would show it well before the flyby: C5 fires on the first new orbit solution that moves the 2029 distance by more than 3.3 km, and C6 if a push is detected.
 - A result between the two ranges counts as a win for neither, but it would still prove the model wrong if it falls outside the 3-sigma window.
 
+**Addendum: the investigator's stated reason for 28,000 to 29,000 km** (added at Bram's request, made public by him as a statement of confidence; commit time is authoritative):
+- The range is the orbital shell of the medium-Earth-orbit navigation satellites: BeiDou MEO about 27,900 km from Earth's centre and Galileo about 29,600 km, with GPS (about 26,600 km) and GLONASS (about 25,500 km) just below. The prediction is that Apophis passes **through** the navigation-satellite shell, not between that shell and the geostationary ring (42,164 km), where JPL and ESA place it.
+- Bram also described the bet as one he expects and hopes to lose: he picked a prediction he would rather be wrong about. This doesn't change how it is scored.
+- This addendum records the reason only. The predicted range itself is unchanged from commit d0b7730.
+
 ### 4e. C9, the photometric distance check: "the rock gets bigger when it should get smaller" (added 23 Oct 2026, commit e243abb at 22:34 UTC)
 
 Proposed by the investigators. It tests the orbit with the study's own telescope time instead of trusting anyone's model. If Apophis is closer than predicted, it looks brighter: brightness goes as distance⁻², so a true distance k times the predicted one gives a residual of 5·log10(k) magnitudes. 10% closer is 0.23 mag brighter; Bram's 28,500 km against 38,011 km at closest approach would be 0.62 mag brighter in the final hours.
