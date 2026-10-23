@@ -76,6 +76,22 @@ H-A is refuted if, by the end of the spacecraft missions' first close-up imaging
 
 H-A is supported only by a C6, C7 or C8 result that survives the checks in section 7. One unconfirmed observation is not support.
 
+### 4c. The 2029 model test (added 23 Oct 2026, 22:00 UTC)
+
+The 2029 flyby is the first close pass of an object this size that was predicted years ahead. It tests the models themselves. These are today's predictions, frozen here and scored after the flyby against the reconstructed orbit, which will be fitted with the flyby's own observations, radar and spacecraft tracking:
+
+| Prediction (made 23 Oct 2026) | JPL solution 220 | ESA (independent) |
+|---|---|---|
+| Closest approach, UTC | 21:44:50 (21:46 TDB), time uncertainty < 1 min | 21:45:03 |
+| Distance from Earth's centre | 38,011 km, 3-sigma window 6.6 km (38,008 to 38,015) | 38,014 km, 1-sigma 1.3 km |
+| Point beneath at closest approach | 29.0N 43.1W, mid-Atlantic (Hannibal, from Horizons) | |
+| Yarkovsky push A2 | −2.9018e−14 ± 1.9e−16 au/d² | −2.9001e−14 ± 2.3e−16 au/d² |
+
+How it is scored:
+- **Model right:** the reconstructed time and distance fall inside the predicted 3-sigma windows.
+- **Model wrong:** they fall outside. That would mean the orbit models, the uncertainty estimates or the force models (Yarkovsky) were off. It would be worth publishing either way.
+- **Also recorded:** any change to Apophis's spin or surface from Earth's tides that the spacecraft report, set against the predictions published before April 2029.
+
 ## 5. What would refute the concern
 
 If none of C1 to C5 is triggered by new orbit solutions that use observations from Apophis's next observing window (expected from about 2027), professional data gives no reason for concern. The sealed hypothesis may make its own prediction; it is judged against what it said.
