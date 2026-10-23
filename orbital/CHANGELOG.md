@@ -3,6 +3,29 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-24] GNSS watch: official GPS/Galileo status + RTL-SDR signal log
+
+### Why
+To watch the navigation satellites honestly: official outage notices first, and the station's own receiver as a second, local view. It is decoupled from the event loop and receive-only.
+
+### Added
+- **`hannibal_gnss.py`**:
+  - `status`: the NAVCEN GPS operational advisory (every active NANU) and the GSC Galileo constellation page (per-satellite status and NAGUs). NANU types are read as published: FCST* is routine planned maintenance, UNUS*/UNUN* means the satellite has been declared unusable, and the rest is information.
+  - `config`: a starting GNSS-SDR configuration for an RTL-SDR on GPS L1 C/A, with the bias-tee powering an active patch antenna.
+  - `log`: turns GNSS-SDR's NMEA GSV sentences into a per-satellite elevation and C/N0 CSV, checksum-verified, with `--follow` for live use.
+  - `check`: flags a possible local interference candidate when at least 4 satellites above 30 deg each drop more than 6 dB-Hz below their own median at that elevation, on 2 consecutive epochs. It's a candidate, never proof, and says nothing about spoofing.
+  - `gnss_routine_scan(state, csv)`: the hook for the terminal's batch sync. It returns only notices that are new since the last run, in the infrastructure-headline shape. A failed fetch returns nothing and keeps the remembered state.
+- `hannibal_net` host limits for navcen.uscg.gov and gsc-europa.eu, cached 30 minutes.
+- `test_hannibal_gnss.py` (offline, trimmed real pages, synthetic NMEA).
+
+### Verified (live, 23 Oct 2026)
+- GPS advisory of 22 Oct: 32 satellites, 8 planned maintenance notices, PRN11 and PRN25 declared unusable until further notice.
+- Galileo: 28 of 32 usable. E18 and E14 have been unavailable since 2021, E22 since 2017 and E01 since 2023.
+
+### Not done / limits
+- The RTL-SDR half is untested on hardware here: no radio in this environment. Check the GNSS-SDR values against its documentation for your version.
+- GNSS needs an active patch antenna with a clear sky view, not a dish.
+
 ## [2026-10-23, later] Moonbounce: choose dish or Yagi, band-aware noise
 
 ### Why
