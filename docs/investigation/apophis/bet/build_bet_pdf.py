@@ -37,6 +37,8 @@ COMMITS = [
     ("65431af", "2026-10-23 21:42 UTC", "2029 model test: JPL and ESA predictions frozen"),
     ("d0b7730", "2026-10-23 21:46 UTC", "The bet recorded (section 4d)"),
     ("8bf1987", "2026-10-23 21:47 UTC", "Section headings cite their commits"),
+    ("e243abb", "2026-10-23 22:34 UTC", "Criterion C9: photometric distance check"),
+    ("69628c9", "2026-10-23 22:53 UTC", "Investigator's reason for his range made public (4d addendum)"),
 ]
 
 
@@ -71,6 +73,11 @@ s += [P("1  The predictions", h2),
              ["Claude, AI assistant (Anthropic)", "<b>38,008 to 38,015 km</b>, closest approach at 21:45 UTC ± 1 minute",
               "NASA/JPL orbit solution 220, 3-sigma window, confirmed independently by ESA NEOCC"]], [44, 70, 60]),
       Spacer(1, 4),
+      P("<b>Investigator's stated reason</b> (made public at his request, commit 69628c9): 28,000 to 29,000 km is the "
+        "orbital shell of the medium-orbit navigation satellites (BeiDou about 27,900 km and Galileo about 29,600 km from "
+        "Earth's centre; GPS and GLONASS just below). The prediction is that Apophis passes through that shell rather than "
+        "between it and the geostationary ring, where both agencies place it. He describes it as a bet he hopes to lose."),
+      Spacer(1, 2),
       P("Recorded in <font name='Mono'>docs/investigation/apophis/PREREGISTRATION.md</font>, section 4d, commit "
         "<font name='Mono'>d0b7730</font> (23 Oct 2026, 21:46:07 UTC). Stake: reputation only. No money, goods or "
         "services are involved.", small)]
@@ -136,7 +143,7 @@ s += [P("6  Disclosures and compliance notes", h2),
              ["Pre-registration", "Criteria and predictions were committed before any data testing them existed. Later "
                                   "changes are new commits with a stated reason."]], [32, 142])]
 
-s += [Spacer(1, 10), P("Prepared from the repository state at commit 8bf1987 (23 Oct 2026, 21:47 UTC). If this PDF and "
+s += [Spacer(1, 10), P("Prepared from the repository state at commit 69628c9 (2026-10-23 22:53 UTC). If this PDF and "
                        "the repository ever disagree, the repository's git history is authoritative.", small)]
 
 SimpleDocTemplate(str(OUT), pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm, topMargin=16 * mm,
