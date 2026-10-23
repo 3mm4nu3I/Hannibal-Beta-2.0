@@ -1,0 +1,144 @@
+{
+  "snapshots_total": 2,
+  "snapshots_verified": 2,
+  "integrity_failures": [],
+  "first_utc": "2026-10-23T21:03:00Z",
+  "last_utc": "2026-10-23T21:59:05Z",
+  "orbit_solutions_seen": [
+    "220"
+  ],
+  "jpl_last_obs_seen": [
+    "2022-04-09"
+  ],
+  "esa_last_obs_seen": [
+    "2022-04-09"
+  ],
+  "sentry_states": [
+    "removed 2021-02-21 08:22:28"
+  ],
+  "esa_risk_states": [
+    "not listed"
+  ],
+  "metrics": {
+    "jpl_2029_km": {
+      "n": 2,
+      "min": 38011.45916295157,
+      "max": 38011.45916295157,
+      "mean": 38011.45916295157,
+      "stdev": 0.0,
+      "distinct": 1
+    },
+    "esa_2029_km": {
+      "n": 2,
+      "min": 38013.8046437948,
+      "max": 38013.8046437948,
+      "mean": 38013.8046437948,
+      "stdev": 0.0,
+      "distinct": 1
+    },
+    "diff_2029_km": {
+      "n": 2,
+      "min": 2.34548084322887,
+      "max": 2.34548084322887,
+      "mean": 2.34548084322887,
+      "stdev": 0.0,
+      "distinct": 1
+    },
+    "nsigma_2029": {
+      "n": 2,
+      "min": 1.3698486877864344,
+      "max": 1.3698486877864344,
+      "mean": 1.3698486877864344,
+      "stdev": 0.0,
+      "distinct": 1
+    },
+    "jpl_2029_min_km": {
+      "n": 2,
+      "min": 38008.18140734614,
+      "max": 38008.18140734614,
+      "mean": 38008.18140734614,
+      "stdev": 0.0,
+      "distinct": 1
+    },
+    "esa_2029_min_km": {
+      "n": 2,
+      "min": 38009.849714891825,
+      "max": 38009.849714891825,
+      "mean": 38009.849714891825,
+      "stdev": 0.0,
+      "distinct": 1
+    },
+    "time_diff_2029_s": {
+      "n": 2,
+      "min": 12.64,
+      "max": 12.64,
+      "mean": 12.64,
+      "stdev": 0.0,
+      "distinct": 1
+    },
+    "jpl_A2": {
+      "n": 1,
+      "min": -2.901766637153165e-14,
+      "max": -2.901766637153165e-14,
+      "mean": -2.901766637153165e-14,
+      "stdev": 0.0,
+      "distinct": 1
+    },
+    "esa_A2": {
+      "n": 1,
+      "min": -2.90012877256919e-14,
+      "max": -2.90012877256919e-14,
+      "mean": -2.90012877256919e-14,
+      "stdev": 0.0,
+      "distinct": 1
+    },
+    "lisbon_nearest_edge_km": {
+      "n": 1,
+      "min": 32491.893318632912,
+      "max": 32491.893318632912,
+      "mean": 32491.893318632912,
+      "stdev": 0.0,
+      "distinct": 1
+    }
+  },
+  "criteria": {
+    "C1": {
+      "fired": 0,
+      "checked": 2,
+      "fired_in": []
+    },
+    "C2": {
+      "fired": 0,
+      "checked": 2,
+      "fired_in": []
+    },
+    "C3": {
+      "fired": 0,
+      "checked": 2,
+      "fired_in": []
+    },
+    "C4": {
+      "fired": 0,
+      "checked": 1,
+      "fired_in": []
+    },
+    "C5": {
+      "fired": 0,
+      "checked": 2,
+      "fired_in": []
+    },
+    "C6": {
+      "fired": 0,
+      "checked": 1,
+      "fired_in": []
+    }
+  },
+  "source_failures": {},
+  "outcome": "none",
+  "conclusion": "No pre-registered criterion fired in any verified snapshot. Over the study period, the public data from NASA/JPL and ESA NEOCC give no evidence for a risk of impact by 99942 Apophis, including at the point off Lisbon, and no evidence for a push the Yarkovsky model doesn't explain. This is a null result for the period covered. It does not test predictions that depend on observations not yet made (Apophis is next observable from about 20 December 2026).",
+  "bet_status": {
+    "Bram": false,
+    "Claude": true
+  },
+  "bet_latest_km": 38011.45916295157
+}
