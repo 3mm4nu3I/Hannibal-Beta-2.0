@@ -3,6 +3,12 @@
 Newest first. Each entry says what changed, why, and what was and was not verified.
 Per-module detail lives next to the module (e.g. orbital/CHANGELOG_telemetry.md).
 
+## 2026-10-23 (evening) — Mission report and debrief (PDF)
+- `docs/reports/2026-10-23_mission-report/`: a 9-page PDF report of the two days (timeline with worked intervals, method, results, ERS 15 profile and reception history, Apophis, moonbounce, Voyager 1 link budget, Belgian receive-only rules, next steps, sources), with the scripts and data that build it.
+- New figures gathered for it: ERS 15 has 632 vetted good SatNOGS observations since 21 Oct 2020 by at least 96 stations, heard on 31.0% of vetted passes over the last 365 days (95% range 25.4–37.3%). Voyager 1 is 172.69 au away (23 Oct 16:00 UT, JPL Horizons), 23 h 56 min one-way; the free-space formula reproduces JPL's published Voyager design table to 0.01 dB.
+- The zombie check was re-run on 23 Oct: unchanged, 2 of 148 heard.
+- Corrections relative to the 23 Oct "post-mission" draft: the reception evidence is SatNOGS volunteer stations', not Hannibal's own; Hannibal is not air-gapped (it uses public internet APIs); ERS 15 was documented as transmitting before this work (SatNOGS since 2020, Orbital Focus by 2014); its battery-free design could not be confirmed from the sources checked; an unrelated account-security incident is left out of the report.
+
 ## 2026-10-23 (later) — Moonbounce: choose dish or Yagi, band-aware noise
 - `[E]` now asks for the antenna: a dish (prime-focus, offset or mesh, and its diameter) or a Yagi array (gain of one Yagi and how many), on any band. Defaults: Yagi arrays on 6 m / 2 m / 70 cm, a 3 m dish from 23 cm up.
 - System noise is worked out per band and antenna (receiver + galactic sky + the Moon's own glow + ground) instead of one fixed 100 K. A 4-Yagi 2 m station had looked 4.3 dB better than it is.
