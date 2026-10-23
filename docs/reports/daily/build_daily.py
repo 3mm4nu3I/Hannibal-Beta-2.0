@@ -300,8 +300,8 @@ def render(cur, path):
             f"observations, last {a['last_obs']}). Sentry: {a['sentry']} {a.get('sentry_removed') or ''}.", body))
         s.append(Paragraph(
             "Worst case used throughout: distances are JPL's nearest 3-sigma edge, never the nominal. "
-            "Consequence if it ever did hit (upper bound: 370 m, 3.5 g/cm³, 12.6 km/s): about 1,600 Mt, "
-            "32 Tsar Bombas. The verdict above says whether it can hit; this line says what it would mean.", small))
+            "Consequence if it ever did hit (upper bound: 370 m, 3.5 g/cm³, 12.6 km/s): about 1,800 Mt, "
+            "35 Tsar Bombas. The verdict above says whether it can hit; this line says what it would mean.", small))
         rows = [["pass (TDB)", "distance km", "nearest edge km", "window km", "above atmos. km", "verdict"]]
         for p in a["passes"]:
             rows.append([p["date"], f"{p['distance_km']:,.0f}", f"{p['min_km']:,.0f}", f"{p['window_km']:,.1f}",
