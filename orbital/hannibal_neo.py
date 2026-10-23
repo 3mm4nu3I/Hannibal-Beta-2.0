@@ -177,7 +177,7 @@ def format_report(r):
     s = r["sentry"]
     lines.append("  Sentry: " + {"listed": "ON THE RISK LIST", "removed": f"removed {s.get('removed', '')}",
                                  "not_listed": "never listed"}.get(s["state"], "no answer"))
-    lines += ["", f"  {'date (UTC)':<18} {'distance km':>13} {'nearest edge':>13} {'window km':>11} "
+    lines += ["", f"  {'date (TDB)':<18} {'distance km':>13} {'nearest edge':>13} {'window km':>11} "
                   f"{'above atmos.':>13}  this pass"]
     for p in r["passes"]:
         tag = p["verdict"] + (" (inside GEO)" if p["inside_geo"] else "") + (" ~rough" if p["rough"] else "")
@@ -189,6 +189,7 @@ def format_report(r):
     if r["sentry"]["state"] == "listed" and r["passes"] and all(p["verdict"] == EXCLUDED for p in r["passes"]):
         lines.append("  Every listed pass clears Earth, but a pass can steer the object through a keyhole toward a")
         lines.append("  later impact. Sentry's impact solutions cover that case, so its verdict stands.")
+    lines.append("  Dates are JPL's TDB (about 69 s ahead of UTC): Apophis's 21:46 TDB is 21:45 UTC.")
     lines.append("  Distances are JPL's 3-sigma bounds from linearised orbit uncertainty. ~rough = the window is wider")
     lines.append("  than the distance itself, so that row is only a rough guide; Sentry decides those cases.")
     return "\n".join(lines)
