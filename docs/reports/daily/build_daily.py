@@ -88,6 +88,7 @@ def crosscheck(net, evidence_dir):
            "reason": a["reason"], "concerns": a.get("concerns", []), "notes": a.get("notes", []),
            "jpl_sentry": a.get("jpl_sentry"), "esa_risk_list": a.get("esa_risk_list"),
            "jpl_orbit": a.get("jpl_orbit"), "esa_observations": a.get("esa_observations"),
+           "nongrav": a.get("nongrav"),
            "passes": [{k: r.get(k) for k in ("date", "status", "jpl_km", "esa_km", "diff_km", "n_sigma",
                                              "time_diff_s")} for r in a.get("passes", [])],
            "evidence": str(Path(evidence_dir).relative_to(HERE.parents[2])) if Path(evidence_dir).is_relative_to(
@@ -333,7 +334,7 @@ def render(cur, path):
             s.append(Paragraph(f"Where it will be: {w.get('status')} ({w.get('error')}).", small))
 
     xc = cur.get("crosscheck") or {}
-    s.append(Paragraph("1b &nbsp; Independent check: NASA/JPL vs ESA NEOCC (pre-registered criteria C1-C5)", h2))
+    s.append(Paragraph("1b &nbsp; Independent check: NASA/JPL vs ESA NEOCC (pre-registered criteria C1-C6)", h2))
     if xc.get("status") != "ok":
         s.append(Paragraph(f"NO DATA: {xc.get('reason') or xc.get('error')}. No conclusion drawn from this section.",
                            body))
@@ -344,6 +345,15 @@ def render(cur, path):
         s.append(Paragraph(f"Risk lists: JPL Sentry {xc['jpl_sentry']}; ESA {xc['esa_risk_list']}. JPL orbit "
                            f"{jo.get('orbit_id')} ({jo.get('n_obs_used')} obs used, last {jo.get('last_obs')}); ESA file "
                            f"{eo.get('count')} obs, last {eo.get('last')}.", body))
+        ng = xc.get("nongrav") or {}
+        if (ng.get("jpl") or {}).get("A2"):
+            ja2, js2 = ng["jpl"]["A2"]
+            ea = (ng.get("esa") or {}).get("A2")
+            c6 = [c for c in xc.get("concerns", []) if c.startswith("C6")]
+            s.append(Paragraph(f"Yarkovsky push A2 (C6, hypothesis H-A): JPL {ja2:.4e} ± {js2:.1e} au/d²"
+                               + (f", ESA {ea[0]:.4e} ± {ea[1]:.1e}" if ea and ea[0] is not None and ea[1] else "")
+                               + (". C6 FIRED: " + "; ".join(c6) if c6 else
+                                  ". Matches solution 220; no radial or out-of-plane push beyond 3 sigma."), body))
         rows = [["pass (JPL TDB)", "JPL km", "ESA km", "diff km", "sigma", "status"]]
         for r in xc["passes"]:
             if r["status"] in ("AGREE", "DISAGREE"):

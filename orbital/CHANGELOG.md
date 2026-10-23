@@ -3,6 +3,19 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-23, after midnight] Hypothesis H-A (C6 to C8), observing plan, O-C checker
+
+### Added
+- **C6 unexplained push** in `hannibal_crosscheck.py`: JPL's non-gravitational terms (SBDB `model_pars`, full precision) against the solution-220 baseline (A2 = -2.9018e-14 +/- 1.9e-16 au/d^2), radial or out-of-plane terms significant beyond 3 sigma, and JPL against ESA's own Yarkovsky term (`.ke1`). Every concern line now names its criterion (C1 to C6). Live: JPL -2.9018e-14, ESA -2.9001e-14, 0.06 sigma apart.
+- `PREREGISTRATION.md` section 4b: the named hypothesis H-A (artificial or controlled), with predictions C6 (automatic), C7 (radio, manual) and C8 (behaviour and close-up imaging, manual), and what refutes it.
+- **`hannibal_obsplan.py`**: remote-telescope plan per MPC code (LCO 1 m and 0.4 m, iTelescope), counting nights that are dark, above 30 deg and away from the Moon. Gives the integration time for astrometry (SNR 10) and photometry (SNR 50) and the trail-limited sub-exposure. `docs/investigation/apophis/OBSERVING_PLAN.md` + `observing_plan.json`.
+- **`hannibal_astrometry_check.py`**: O-C of your own positions against JPL Horizons at the exact times and station, with combined sigmas, tracklet means and a clock-error hint for along-track offsets. A single point never raises a flag.
+- `test_hannibal_obsplan_astrometry.py`; `test_hannibal_crosscheck.py` extended with the C6 triggers.
+
+### Verified
+- O-C of JPL's own positions comes out at 0.00"; an injected 1.5" along-track offset is flagged with the 28 s clock error that explains it.
+- All orbital tests pass.
+
 ## [2026-10-23, late night] Independent cross-check: NASA/JPL vs ESA NEOCC, with an evidence trail
 
 ### Why

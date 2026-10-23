@@ -28,8 +28,22 @@ BODY         CALENDAR-TIME     MJD-TIME        TIME-UNCERT.     NOM.-DISTANCE   
 """
 SENTRY = '{"error":"specified object removed","signature":{"version":"2.0","source":"NASA/JPL Sentry Data API"},' \
          '"removed":"2021-02-21 08:22:28"}'
-SBDB = json.dumps({"object": {"fullname": "99942 Apophis (2004 MN4)"},
-                   "orbit": {"orbit_id": "220", "n_obs_used": 7370, "last_obs": "2022-04-09", "condition_code": "0"}})
+MODEL_PARS = [{"name": "A1", "value": "5.E-13", "sigma": "4.892E-13", "kind": "EST"},
+              {"name": "A2", "value": "-2.901766637153165E-14", "sigma": "1.859E-16", "kind": "EST"},
+              {"name": "ALN", "value": "1.", "sigma": None, "kind": "SET"}]
+
+
+def sbdb(pars=MODEL_PARS):
+    return json.dumps({"object": {"fullname": "99942 Apophis (2004 MN4)"},
+                       "orbit": {"orbit_id": "220", "n_obs_used": 7370, "last_obs": "2022-04-09",
+                                 "condition_code": "0", "model_pars": pars}})
+
+
+SBDB = sbdb()
+KE1 = """99942
+ NGR   0.00000000000000E+00 -2.90012877256919E-04
+! RMS    1.43322E-10   1.39504E-09   1.55280E-07   7.58889E-06   8.15420E-06   9.01435E-07   2.32321E-06
+"""
 RISK = """Last Update: 2026-10-23 18:51 UTC
 Num/des.           Name       |   m  |   *=Y   |      Date/Time   |  IP max  | PS max |TS  | Vel km/s | Years     | IP cum   | PS cum |
 2023VD3                       |   14 |    *    | 2034-11-08 17:08 |  2.35E-3 |  -2.67 |  0 |   21.01  | 2034-2039 |  2.35E-3 |  -2.67 |
@@ -50,7 +64,7 @@ TODAY = datetime(2026, 10, 23, 21, 0, tzinfo=timezone.utc)
 
 def records(**override):
     texts = {"jpl_cad": json.dumps(CAD), "jpl_sentry": SENTRY, "jpl_sbdb": SBDB, "esa_clolin": CLOLIN,
-             "esa_risk_list": RISK, "esa_observations": RWO}
+             "esa_risk_list": RISK, "esa_observations": RWO, "esa_orbit": KE1}
     texts.update(override)
     out = {}
     for k, t in texts.items():
@@ -104,6 +118,22 @@ assert "Sentry lists" in x.analyse("99942", records(jpl_sentry=sentry_listed), t
 newer = RWO + " 99942        O C   2027 01 05.12345       1.000E-05 10 00 00\n"
 assert "new orbit" in " ".join(x.analyse("99942", records(esa_observations=newer), today=TODAY)["notes"])
 
+# --- C6: a push the Yarkovsky model of solution 220 does not explain ----------------------------------
+assert x.esa_nongrav(KE1)["A2"][0] == -2.90012877256919e-14
+ng = x.analyse("99942", records(), today=TODAY)["nongrav"]
+assert ng["jpl"]["A2"][0] == x.A2_BASELINE and abs(ng["esa"]["A2"][1] - 2.32321e-16) < 1e-21
+jump = [dict(p, value="-2.99E-14") if p["name"] == "A2" else p for p in MODEL_PARS]
+assert "C6: JPL Yarkovsky term moved" in x.analyse("99942", records(jpl_sbdb=sbdb(jump)), today=TODAY)["reason"]
+side = MODEL_PARS + [{"name": "A3", "value": "4.0E-15", "sigma": "5.0E-16", "kind": "EST"}]
+assert "out-of-plane push" in x.analyse("99942", records(jpl_sbdb=sbdb(side)), today=TODAY)["reason"]
+radial = [dict(p, value="5.0E-12") if p["name"] == "A1" else p for p in MODEL_PARS]
+assert "radial push" in x.analyse("99942", records(jpl_sbdb=sbdb(radial)), today=TODAY)["reason"]
+esa_off = KE1.replace("-2.90012877256919E-04", "-3.00000000000000E-04")
+assert "JPL and ESA disagree on the Yarkovsky" in x.analyse("99942", records(esa_orbit=esa_off), today=TODAY)["reason"]
+assert "C6 (unexplained push) not checked" in " ".join(
+    x.analyse("99942", records(jpl_sbdb=None), today=TODAY)["notes"])
+assert "not checkable" in " ".join(x.analyse("99942", records(jpl_sbdb=sbdb([])), today=TODAY)["notes"])
+
 # --- no data never becomes an all-clear --------------------------------------------------------------
 assert x.analyse("99942", records(esa_clolin=None), today=TODAY)["verdict"] == x.NO_DATA
 assert x.analyse("99942", records(jpl_cad=None), today=TODAY)["verdict"] == x.NO_DATA
@@ -121,7 +151,7 @@ with tempfile.TemporaryDirectory() as tmp:
             assert hashlib.sha256((folder / entry["saved_as"]).read_bytes()).hexdigest() == entry["sha256"]
         else:
             assert entry["name"] == "esa_observations" and entry["summary"]["count"] > 0
-    assert len((folder / "SHA256SUMS").read_text().splitlines()) == 5
+    assert len((folder / "SHA256SUMS").read_text().splitlines()) == 6
 
 
 # --- capture() asks live: no cache, no stale fallback ------------------------------------------------
@@ -132,7 +162,7 @@ class FakeNet:
     def request(self, method, url, **kw):
         self.calls.append((url, kw))
         name = kw["params"].get("file") or url
-        text = {"99942.clolin": CLOLIN, "esa_risk_list": RISK, "99942.rwo": RWO}.get(name)
+        text = {"99942.clolin": CLOLIN, "esa_risk_list": RISK, "99942.rwo": RWO, "99942.ke1": KE1}.get(name)
         if text is None:
             text = json.dumps(CAD) if "cad" in url else SENTRY if "sentry" in url else SBDB
         return Result(text)

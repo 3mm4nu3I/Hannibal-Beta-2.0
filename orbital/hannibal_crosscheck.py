@@ -42,6 +42,9 @@ SENTRY_URL = "https://ssd-api.jpl.nasa.gov/sentry.api"
 SBDB_URL = "https://ssd-api.jpl.nasa.gov/sbdb.api"
 ESA_URL = "https://neo.ssa.esa.int/PSDB-portlet/download"
 SMALL_BYTES = 200_000              # replies up to this size are saved verbatim
+# Pre-registered baseline for criterion C6 (docs/investigation/apophis/PREREGISTRATION.md, hypothesis H-A):
+# JPL solution 220's transverse non-gravitational acceleration (the Yarkovsky push) and its 1-sigma, au/d^2.
+A2_BASELINE, A2_BASELINE_SIGMA = -2.901766637153165e-14, 1.859e-16
 
 AGREE, DISAGREE, ONLY_JPL, ONLY_ESA = "AGREE", "DISAGREE", "JPL only", "ESA only"
 CONSISTENT, CONCERN, NO_DATA = "CONSISTENT", "CONCERN", "NO DATA"
@@ -54,10 +57,11 @@ def sources(des, start=None, end="2200-01-01"):
     return [
         ("jpl_cad", CAD_URL, {"des": d, "date-min": start, "date-max": end, "dist-max": "0.2"}),
         ("jpl_sentry", SENTRY_URL, {"des": d}),
-        ("jpl_sbdb", SBDB_URL, {"sstr": d}),
+        ("jpl_sbdb", SBDB_URL, {"sstr": d, "full-prec": "true"}),
         ("esa_clolin", ESA_URL, {"file": f"{d.replace(' ', '')}.clolin"}),
         ("esa_risk_list", ESA_URL, {"file": "esa_risk_list"}),
         ("esa_observations", ESA_URL, {"file": f"{d.replace(' ', '')}.rwo"}),
+        ("esa_orbit", ESA_URL, {"file": f"{d.replace(' ', '')}.ke1"}),
     ]
 
 
@@ -126,6 +130,54 @@ def observations_summary(text):
             "first": min(dates) if dates else None, "last": max(dates) if dates else None}
 
 
+def jpl_nongrav(sbdb_json):
+    """SBDB orbit.model_pars -> {'A1': (value, sigma), 'A2': ..., 'A3': ...} for the estimated terms."""
+    out = {}
+    for p in ((sbdb_json or {}).get("orbit") or {}).get("model_pars") or []:
+        if p.get("name") in ("A1", "A2", "A3") and p.get("kind") == "EST":
+            out[p["name"]] = (float(p["value"]), float(p["sigma"]) if p.get("sigma") else None)
+    return out
+
+
+def esa_nongrav(ke1_text):
+    """ESA .ke1 -> Yarkovsky A2 (au/d^2) and its 1-sigma, from the NGR line and the last RMS value."""
+    a2 = sig = None
+    for ln in (ke1_text or "").splitlines():
+        parts = ln.split()
+        if parts[:1] == ["NGR"] and len(parts) >= 3:
+            a2 = float(parts[2]) * 1e-10
+        if parts[:2] == ["!", "RMS"] and len(parts) >= 9:
+            sig = float(parts[-1]) * 1e-10
+    return {"A2": (a2, sig)} if a2 is not None else {}
+
+
+def nongrav_checks(jpl_ng, esa_ng):
+    """Criterion C6: a push that the Yarkovsky model of solution 220 does not explain. Returns (concerns, notes)."""
+    concerns, notes = [], []
+    if not jpl_ng.get("A2"):
+        notes.append("JPL publishes no transverse non-gravitational term: C6 not checkable this run")
+        return concerns, notes
+    a2, s2 = jpl_ng["A2"]
+    comb = math.hypot(s2 or 0.0, A2_BASELINE_SIGMA)
+    if comb and abs(a2 - A2_BASELINE) > SIGMAS * comb:
+        concerns.append(f"C6: JPL Yarkovsky term moved from {A2_BASELINE:.4e} to {a2:.4e} au/d^2 "
+                        f"({abs(a2 - A2_BASELINE) / comb:.1f} sigma)")
+    for name, what in (("A1", "radial"), ("A3", "out-of-plane")):
+        if name in jpl_ng and jpl_ng[name][1]:
+            v, s = jpl_ng[name]
+            if abs(v) > SIGMAS * s:
+                concerns.append(f"C6: JPL now detects a {what} push {name} = {v:.3e} au/d^2 ({abs(v) / s:.1f} sigma)")
+    if "A3" in jpl_ng and not jpl_ng["A3"][1]:
+        notes.append("JPL added an out-of-plane term A3 without a sigma")
+    e = esa_ng.get("A2")
+    if e and e[0] is not None:
+        ecomb = math.hypot(s2 or 0.0, e[1] or 0.0)
+        if ecomb and abs(a2 - e[0]) > SIGMAS * ecomb:
+            concerns.append(f"C6: JPL and ESA disagree on the Yarkovsky term ({a2:.4e} vs {e[0]:.4e} au/d^2, "
+                            f"{abs(a2 - e[0]) / ecomb:.1f} sigma)")
+    return concerns, notes
+
+
 def jpl_passes(cad_json):
     fields = cad_json.get("fields") or []
     idx = {f: i for i, f in enumerate(fields)}
@@ -183,18 +235,18 @@ def analyse(des, records, today=None):
     floor = EARTH_EQ_RADIUS_KM + ATMOSPHERE_KM
     for e in esa:
         if e["min_km"] <= floor:
-            out["concerns"].append(f"ESA: minimum possible distance {e['min_km']:,.0f} km on "
+            out["concerns"].append(f"C2: ESA minimum possible distance {e['min_km']:,.0f} km on "
                                    f"{e['time_utc']:%Y-%m-%d} reaches the atmosphere")
     for j in jpl:
         if j["min_km"] <= floor:
-            out["concerns"].append(f"JPL: minimum possible distance {j['min_km']:,.0f} km on {j['date_tdb']} "
+            out["concerns"].append(f"C2: JPL minimum possible distance {j['min_km']:,.0f} km on {j['date_tdb']} "
                                    f"reaches the atmosphere")
     for r in rows:
         if r["status"] == DISAGREE:
             # a disagreement on a pass whose window is wider than the distance is expected, not alarming
             rough = r["combined_sigma_km"] * 6 > min(r["jpl_km"], r["esa_km"])
             (out["notes"] if rough else out["concerns"]).append(
-                f"{r['date']}: JPL {r['jpl_km']:,.0f} km vs ESA {r['esa_km']:,.0f} km, {r['n_sigma']:.1f} sigma apart"
+                ("" if rough else "C3: ") + f"{r['date']}: JPL {r['jpl_km']:,.0f} km vs ESA {r['esa_km']:,.0f} km, {r['n_sigma']:.1f} sigma apart"
                 + (" (both solutions very uncertain there)" if rough else ""))
     sentry = {}
     if rec["jpl_sentry"].get("ok"):
@@ -203,19 +255,27 @@ def analyse(des, records, today=None):
         "LISTED" if sentry.get("summary") else ("not listed" if "not found" in str(sentry.get("error", "")).lower()
                                                 else "no answer"))
     if out["jpl_sentry"] == "LISTED":
-        out["concerns"].append("JPL Sentry lists the object")
+        out["concerns"].append("C1: JPL Sentry lists the object")
     if rec["esa_risk_list"].get("ok"):
         lines = risk_list_lines(rec["esa_risk_list"]["text"], des)
         out["esa_risk_list"] = "LISTED" if lines else "not listed"
         out["esa_risk_lines"] = lines
         if lines:
-            out["concerns"].append("ESA risk list includes the object: " + lines[0].strip())
+            out["concerns"].append("C1: ESA risk list includes the object: " + lines[0].strip())
     else:
         out["esa_risk_list"] = "no answer"
     if rec["jpl_sbdb"].get("ok"):
         o = (json.loads(rec["jpl_sbdb"]["text"]) or {}).get("orbit") or {}
         out["jpl_orbit"] = {"orbit_id": o.get("orbit_id"), "n_obs_used": o.get("n_obs_used"),
                             "last_obs": o.get("last_obs"), "condition_code": o.get("condition_code")}
+        jng = jpl_nongrav(json.loads(rec["jpl_sbdb"]["text"]))
+        eng = esa_nongrav(rec["esa_orbit"]["text"]) if rec.get("esa_orbit", {}).get("ok") else {}
+        out["nongrav"] = {"jpl": {k: list(v) for k, v in jng.items()}, "esa": {k: list(v) for k, v in eng.items()}}
+        c6, n6 = nongrav_checks(jng, eng)
+        out["concerns"] += c6
+        out["notes"] += n6
+    else:
+        out["notes"].append("JPL orbit data unavailable: C6 (unexplained push) not checked this run")
     if rec["esa_observations"].get("ok"):
         out["esa_observations"] = observations_summary(rec["esa_observations"]["text"])
         jl, el = (out.get("jpl_orbit") or {}).get("last_obs"), out["esa_observations"]["last"]
@@ -280,6 +340,13 @@ def format_report(a):
                  f"  ESA file: {eo.get('count')} observations ({eo.get('radar')} radar, {eo.get('from_space')} from space), "
                  f"last {eo.get('last')}.")
     lines.append(f"  Risk lists: JPL Sentry {a['jpl_sentry']}; ESA {a['esa_risk_list']}.")
+    ng = a.get("nongrav") or {}
+    if ng.get("jpl", {}).get("A2"):
+        ja2, js2 = ng["jpl"]["A2"]
+        ea = ng.get("esa", {}).get("A2")
+        lines.append(f"  Yarkovsky push A2: JPL {ja2:.4e} +/- {js2:.1e} au/d^2"
+                     + (f", ESA {ea[0]:.4e} +/- {ea[1]:.1e}" if ea and ea[0] is not None and ea[1] else "")
+                     + f"  (C6 baseline {A2_BASELINE:.4e})")
     lines += ["", f"  {'pass (JPL TDB)':<22} {'JPL km':>12} {'ESA km':>12} {'diff km':>10} {'sigma':>6}  status"]
     for r in a["passes"]:
         if r["status"] in (AGREE, DISAGREE):

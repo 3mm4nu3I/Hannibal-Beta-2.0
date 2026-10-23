@@ -33,13 +33,39 @@ Raw replies, hashes and the analysis for each run are kept in `evidence/<UTC sta
 
 ## 4. What counts as real reason for concern (fixed now, in advance)
 
-Any one of these, from professional data, counts. Each one is checked automatically on every run of the daily brief:
+Any one of these, from professional data, counts. Each one is checked automatically on every run of the daily brief (C6 to C8 for hypothesis H-A are in 4b):
 
 - **C1 Risk list:** JPL Sentry or ESA's risk list carries Apophis again.
 - **C2 Atmosphere:** in JPL's or ESA's numbers, the minimum possible distance of any pass reaches Earth's radius plus 100 km.
 - **C3 Agencies disagree:** JPL and ESA disagree on a pass by more than 3 combined sigma, where the uncertainty window is smaller than the distance. Wider windows are expected to disagree and are logged as notes, not concerns.
 - **C4 Lisbon:** the impossible-event test off Lisbon returns POSSIBLE.
 - **C5 Orbit shift:** a new JPL orbit solution moves the 2029 nominal distance by more than 3 sigma of solution 220 (3 × 1.1 km).
+
+### 4b. Named hypothesis H-A: Apophis is artificial or under control (added 23 Oct 2026, 21:20 UTC)
+
+Reason for adding it: the investigators stated this hypothesis openly, linking 'Oumuamua (2017, "the test") to Apophis's 2029 pass inside the geostationary ring ("the follow-up"). It is recorded here before any data was collected to test it.
+
+Background, recorded so the test is judged fairly:
+- Apophis was discovered in 2004, and its 2029 close approach was known well before 'Oumuamua's 2017 passage.
+- Its measured non-gravitational push is the transverse (Yarkovsky) term. Solution 220: A2 = −2.9018e−14 ± 1.9e−16 au/d². ESA's independent fit: −2.9001e−14 ± 2.3e−16. They agree to 0.06 sigma. No radial or out-of-plane push is detected (A1 = 5e−13 ± 4.9e−13, consistent with zero; no A3).
+
+If H-A is true, at least one of these should eventually show up:
+
+- **C6 Unexplained push** (automatic, every run): any one of
+  - JPL's A2 moves by more than 3 sigma from solution 220,
+  - a radial (A1) or out-of-plane (A3) push becomes significant at more than 3 sigma,
+  - JPL and ESA disagree on A2 by more than 3 sigma.
+
+  A manoeuvre would also show up under C3 and C5.
+- **C7 Radio emission** (manual, 2029 flyby): a narrowband signal that tracks Apophis's sky position and Doppler shift. It must be absent when the antenna points off-source and be confirmed by a second, independent station. Receive-only.
+- **C8 Not behaving like a natural body** (manual): a light curve, spin state or colour that contradicts the known ones (tumbling, 30.6 h main period, stony Sq-type), or close-up images from ESA Ramses or NASA OSIRIS-APEX showing something other than a natural rocky or rubble surface.
+
+H-A is refuted if, by the end of the spacecraft missions' first close-up imaging after the 2029 flyby:
+- C6 never fired on any orbit solution through the flyby,
+- the C7 listening campaign found no confirmed source-tracking signal, and
+- the close-up images and photometry show a natural body.
+
+H-A is supported only by a C6, C7 or C8 result that survives the checks in section 7. One unconfirmed observation is not support.
 
 ## 5. What would refute the concern
 
