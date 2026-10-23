@@ -3,6 +3,22 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-23, late night] Independent cross-check: NASA/JPL vs ESA NEOCC, with an evidence trail
+
+### Why
+To decide whether there's real reason for concern about Apophis, one source asked many times isn't enough. ESA's NEO Coordination Centre fits its own orbit with its own software, so agreement between ESA and JPL is much stronger evidence.
+
+### Added
+- **`hannibal_crosscheck.py`** (`python hannibal_crosscheck.py 99942 --evidence DIR`). Fetches JPL's close approaches, Sentry and SBDB, and ESA's `.clolin` close approaches, risk list and observation file, all live: no cache, no stale fallback. Every raw reply gets a SHA-256 hash, and small replies are saved verbatim with `SHA256SUMS` and `manifest.json`. Passes are matched across agencies (JPL TDB converted to UTC). Each pass is AGREE when the two distances are within 3 combined sigma. Verdict: CONSISTENT, CONCERN (risk-list listing, a minimum distance inside Earth + 100 km, or a 3-sigma disagreement where the window is smaller than the distance), or NO DATA.
+- `test_hannibal_crosscheck.py` (offline, trimmed real JPL/ESA replies). Every concern trigger is tested on its own, as is the rule that no data never becomes an all-clear, and that the evidence hashes match the saved bytes.
+- `docs/investigation/apophis/PREREGISTRATION.md`: the question, the baseline, criteria C1 to C5 fixed in advance, what would refute the concern, and what to do if a criterion fires. `seal.py` is a commit-reveal hash, so a hypothesis can be registered now and revealed later.
+- Daily brief: new section 1b (JPL vs ESA), evidence saved per run to `docs/investigation/apophis/evidence/<stamp>/`. C1 to C5 raise alerts.
+
+### Verified (live, 23 Oct 2026)
+- 2029: JPL 38,011 km vs ESA 38,014 km, 2.3 km apart = 1.4 sigma: AGREE. Both agencies put closest approach at the same minute, 21:45 UTC (21:44:50 vs 21:45:03).
+- All nine shared passes to 2116 AGREE. ESA lists three distant passes (2109 twice, 2124, 18 to 27 million km) that JPL's close-approach list doesn't have; these are shown as "ESA only".
+- Neither risk list carries Apophis. Both have the last observation on 2022-04-09.
+
 ## [2026-10-23, night] `[L]` Where it will be: flyby track, 3-sigma envelope, impact-off-Lisbon test
 
 ### Why

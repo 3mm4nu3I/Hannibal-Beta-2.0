@@ -1,0 +1,153 @@
+{
+  "designation": "99942",
+  "checked_utc": "2026-10-23 21:03",
+  "concerns": [],
+  "notes": [],
+  "passes": [
+    {
+      "date": "2029-Apr-13 21:46",
+      "jpl_km": 38011.45916295157,
+      "esa_km": 38013.8046437948,
+      "diff_km": 2.34548084322887,
+      "combined_sigma_km": 1.7122189217985666,
+      "n_sigma": 1.3698486877864344,
+      "time_diff_s": 12.64,
+      "jpl_min_km": 38008.18140734614,
+      "esa_min_km": 38009.849714891825,
+      "status": "AGREE"
+    },
+    {
+      "date": "2044-Aug-24 07:17",
+      "jpl_km": 12012180.671198001,
+      "esa_km": 12175046.934131723,
+      "diff_km": 162866.26293372177,
+      "combined_sigma_km": 104435.69443354655,
+      "n_sigma": 1.5594884853985929,
+      "time_diff_s": -61224.896,
+      "jpl_min_km": 11813797.324994702,
+      "esa_min_km": 11932745.32200061,
+      "status": "AGREE"
+    },
+    {
+      "date": "2051-Apr-20 02:05",
+      "jpl_km": 6206849.019475985,
+      "esa_km": 6009817.438407323,
+      "diff_km": -197031.581068662,
+      "combined_sigma_km": 126837.0246925063,
+      "n_sigma": 1.553423233841458,
+      "time_diff_s": -23806.208,
+      "jpl_min_km": 5969533.176014308,
+      "esa_min_km": 5712403.541956774,
+      "status": "AGREE"
+    },
+    {
+      "date": "2066-Sep-16 01:59",
+      "jpl_km": 10387038.198850187,
+      "esa_km": 11142091.014039295,
+      "diff_km": 755052.8151891083,
+      "combined_sigma_km": 491174.11629786337,
+      "n_sigma": 1.537240644682548,
+      "time_diff_s": 25412.992,
+      "jpl_min_km": 9517896.946521563,
+      "esa_min_km": 9962121.773482205,
+      "status": "AGREE"
+    },
+    {
+      "date": "2073-Jul-27 18:10",
+      "jpl_km": 16797950.98736386,
+      "esa_km": 16594191.380206242,
+      "diff_km": -203759.6071576178,
+      "combined_sigma_km": 136542.46361351683,
+      "n_sigma": 1.4922801432260588,
+      "time_diff_s": 127841.44,
+      "jpl_min_km": 16583645.859998738,
+      "esa_min_km": 16245260.09335106,
+      "status": "AGREE"
+    },
+    {
+      "date": "2080-May-09 07:59",
+      "jpl_km": 13002040.791212812,
+      "esa_km": 13154451.382851444,
+      "diff_km": 152410.59163863212,
+      "combined_sigma_km": 108382.77685695566,
+      "n_sigma": 1.4062251960916694,
+      "time_diff_s": 56587.84,
+      "jpl_min_km": 12873655.864168962,
+      "esa_min_km": 12855764.460769558,
+      "status": "AGREE"
+    },
+    {
+      "date": "2087-Apr-07 12:20",
+      "jpl_km": 14326095.723633852,
+      "esa_km": 14534892.709840553,
+      "diff_km": 208796.98620670103,
+      "combined_sigma_km": 130958.95982399034,
+      "n_sigma": 1.5943696138647212,
+      "time_diff_s": -9471.872,
+      "jpl_min_km": 14005518.904724834,
+      "esa_min_km": 14307772.813184123,
+      "status": "AGREE"
+    },
+    {
+      "date": "2102-Sep-11 20:52",
+      "jpl_km": 3499720.3257977692,
+      "esa_km": 3803328.7687494545,
+      "diff_km": 303608.4429516853,
+      "combined_sigma_km": 216277.13808583512,
+      "n_sigma": 1.40379351067236,
+      "time_diff_s": -49568.0,
+      "jpl_min_km": 3365402.1124721263,
+      "esa_min_km": 3398614.2243516077,
+      "status": "AGREE"
+    },
+    {
+      "date": "2116-Apr-12 21:44",
+      "jpl_km": 2627072.7362613273,
+      "esa_km": 12161756.717235204,
+      "diff_km": 9534683.980973877,
+      "combined_sigma_km": 4747728.968647255,
+      "n_sigma": 2.0082620646499425,
+      "time_diff_s": -396631.712,
+      "jpl_min_km": 154849.44637788375,
+      "esa_min_km": 209681.44258289103,
+      "status": "AGREE"
+    },
+    {
+      "date": "2109-Mar-18 20:01 UTC",
+      "status": "ESA only",
+      "esa_km": 27279409.65307146,
+      "esa_min_km": 21865280.73749397
+    },
+    {
+      "date": "2109-Jun-11 06:16 UTC",
+      "status": "ESA only",
+      "esa_km": 18108299.588103056,
+      "esa_min_km": 16657758.342437921
+    },
+    {
+      "date": "2124-Sep-21 03:37 UTC",
+      "status": "ESA only",
+      "esa_km": 22147820.60308285,
+      "esa_min_km": 15233633.614152495
+    }
+  ],
+  "jpl_sentry": "removed 2021-02-21 08:22:28",
+  "esa_risk_list": "not listed",
+  "esa_risk_lines": [],
+  "jpl_orbit": {
+    "orbit_id": "220",
+    "n_obs_used": 7370,
+    "last_obs": "2022-04-09",
+    "condition_code": "0"
+  },
+  "esa_observations": {
+    "count": 9577,
+    "optical": 8163,
+    "from_space": 1364,
+    "radar": 50,
+    "first": "2004-03-15",
+    "last": "2022-04-09"
+  },
+  "verdict": "CONSISTENT",
+  "reason": "JPL and ESA agree within their uncertainties, no pass reaches the atmosphere in either, and neither risk list carries the object"
+}

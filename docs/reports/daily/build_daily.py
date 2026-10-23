@@ -28,6 +28,10 @@ SATDB_URL = "https://db.satnogs.org/api/satellites/{}/"
 STALE_H = 48
 SILENT_DAYS = 30
 APOPHIS_BASELINE = {"orbit_id": "220", "sentry": "removed", "verdict": "EXCLUDED", "lisbon": "IMPOSSIBLE"}
+# Pre-registered criterion C5 (docs/investigation/apophis/PREREGISTRATION.md): solution 220's 2029 nominal
+# distance and 3 x its 1-sigma (window 6.6 km / 6). A new solution moving it further is a concern.
+P2029_KM, P2029_3SIGMA_KM = 38_011.46, 3.3
+EVIDENCE_ROOT = HERE.parents[1] / "investigation" / "apophis" / "evidence"
 
 
 def _ts(s):
@@ -71,6 +75,25 @@ def apophis(net):
                     "lisbon": {k: t.get(k) for k in ("verdict", "closest_km", "closest_time", "nearest_edge_km",
                                                      "clearance_above_atmosphere_km", "dark_from", "brightest_mag",
                                                      "note", "error")}}
+    return out
+
+
+def crosscheck(net, evidence_dir):
+    """NASA/JPL vs ESA NEOCC for Apophis, with the raw replies hashed into evidence_dir."""
+    import hannibal_crosscheck as x
+    a, records = x.run("99942", net=net, evidence=evidence_dir)
+    man = Path(evidence_dir) / "manifest.json"
+    import hashlib
+    out = {"status": "NO DATA" if a["verdict"] == x.NO_DATA else "ok", "verdict": a["verdict"],
+           "reason": a["reason"], "concerns": a.get("concerns", []), "notes": a.get("notes", []),
+           "jpl_sentry": a.get("jpl_sentry"), "esa_risk_list": a.get("esa_risk_list"),
+           "jpl_orbit": a.get("jpl_orbit"), "esa_observations": a.get("esa_observations"),
+           "passes": [{k: r.get(k) for k in ("date", "status", "jpl_km", "esa_km", "diff_km", "n_sigma",
+                                             "time_diff_s")} for r in a.get("passes", [])],
+           "evidence": str(Path(evidence_dir).relative_to(HERE.parents[2])) if Path(evidence_dir).is_relative_to(
+               HERE.parents[2]) else str(evidence_dir),
+           "manifest_sha256": hashlib.sha256(man.read_bytes()).hexdigest() if man.exists() else None,
+           "sources_ok": sum(1 for r in records.values() if r.get("ok")), "sources": len(records)}
     return out
 
 
@@ -153,7 +176,21 @@ def changes(cur, prev):
             out.append(("alert", f"Apophis: verdict {a.get('verdict')}"))
         lis = (a.get("where") or {}).get("lisbon") or {}
         if (a.get("where") or {}).get("status") == "ok" and lis.get("verdict") != APOPHIS_BASELINE["lisbon"]:
-            out.append(("alert", f"Apophis: impact off Lisbon is now {lis.get('verdict')}"))
+            out.append(("alert", f"Apophis: impact off Lisbon is now {lis.get('verdict')} (criterion C4)"))
+        p29 = a.get("p2029") or {}
+        if p29 and abs(p29["distance_km"] - P2029_KM) > P2029_3SIGMA_KM:
+            out.append(("alert", f"Apophis: 2029 distance moved {p29['distance_km'] - P2029_KM:+,.1f} km from "
+                                 f"solution 220, more than 3 sigma (criterion C5)"))
+    xc = cur.get("crosscheck") or {}
+    if xc.get("status") != "ok":
+        out.append(("info", f"Independent ESA cross-check: NO DATA ({xc.get('reason') or xc.get('error')})"))
+    else:
+        for c in xc.get("concerns", []):
+            out.append(("alert", f"Cross-check (JPL vs ESA): {c}"))
+        pxc = (prev or {}).get("crosscheck") or {}
+        pl, cl = ((pxc.get("esa_observations") or {}).get("last")), ((xc.get("esa_observations") or {}).get("last"))
+        if pl and cl and cl != pl:
+            out.append(("info", f"ESA observation file: newest observation now {cl} (was {pl})"))
     pa = (prev or {}).get("apophis") or {}
     if pa.get("passes") and a.get("passes"):
         old = {p["date"]: round(p["distance_km"]) for p in pa["passes"]}
@@ -191,7 +228,9 @@ def headline(cur):
         ap = "Apophis NO DATA"
     else:
         lis = ((a.get("where") or {}).get("lisbon") or {}).get("verdict")
-        ap = f"Apophis {a['verdict']} (orbit {a['orbit_id']}" + (f", Lisbon {lis}" if lis else "") + ")"
+        xc = (cur.get("crosscheck") or {}).get("verdict")
+        ap = (f"Apophis {a['verdict']} (orbit {a['orbit_id']}" + (f", Lisbon {lis}" if lis else "")
+              + (f", JPL vs ESA {xc}" if xc else "") + ")")
     rows = cur["satellites"].get("rows", [])
     live = sum(1 for r in rows if r["state"] == "LIVE" and not r.get("stale"))
     sat = f"satellites {live}/{len(rows)} fresh"
@@ -293,6 +332,32 @@ def render(cur, path):
         elif w:
             s.append(Paragraph(f"Where it will be: {w.get('status')} ({w.get('error')}).", small))
 
+    xc = cur.get("crosscheck") or {}
+    s.append(Paragraph("1b &nbsp; Independent check: NASA/JPL vs ESA NEOCC (pre-registered criteria C1-C5)", h2))
+    if xc.get("status") != "ok":
+        s.append(Paragraph(f"NO DATA: {xc.get('reason') or xc.get('error')}. No conclusion drawn from this section.",
+                           body))
+    else:
+        col = "#1e7a3c" if xc["verdict"] == "CONSISTENT" else "#b3261e"
+        jo, eo = xc.get("jpl_orbit") or {}, xc.get("esa_observations") or {}
+        s.append(Paragraph(f"<font color='{col}'><b>{xc['verdict']}</b></font>: {xc['reason']}.", body))
+        s.append(Paragraph(f"Risk lists: JPL Sentry {xc['jpl_sentry']}; ESA {xc['esa_risk_list']}. JPL orbit "
+                           f"{jo.get('orbit_id')} ({jo.get('n_obs_used')} obs used, last {jo.get('last_obs')}); ESA file "
+                           f"{eo.get('count')} obs, last {eo.get('last')}.", body))
+        rows = [["pass (JPL TDB)", "JPL km", "ESA km", "diff km", "sigma", "status"]]
+        for r in xc["passes"]:
+            if r["status"] in ("AGREE", "DISAGREE"):
+                rows.append([r["date"], f"{r['jpl_km']:,.0f}", f"{r['esa_km']:,.0f}", f"{r['diff_km']:+,.1f}",
+                             f"{r['n_sigma']:.1f}", r["status"]])
+            else:
+                rows.append([r["date"], f"{(r.get('jpl_km') or 0):,.0f}" if r.get("jpl_km") else "-",
+                             f"{(r.get('esa_km') or 0):,.0f}" if r.get("esa_km") else "-", "", "", r["status"]])
+        s += [Spacer(1, 3), table(rows, [36, 28, 28, 28, 16, 30])]
+        for n in xc.get("notes", []):
+            s.append(Paragraph("note: " + n, small))
+        s.append(Paragraph(f"Evidence: {xc['sources_ok']}/{xc['sources']} sources fetched live, raw replies hashed in "
+                           f"{xc['evidence']} (manifest SHA-256 {str(xc.get('manifest_sha256'))[:16]}...).", small))
+
     sat = cur["satellites"]
     s.append(Paragraph("2 &nbsp; Satellite health (SatNOGS, receive-only)", h2))
     rows = [["satellite", "NORAD", "state", "last good (UTC)", "age h", "stations*", "next pass (UTC)", "DB"]]
@@ -337,13 +402,14 @@ def build(out_dir=HERE, net=None, now=None):
     now = now or datetime.now(timezone.utc)
     stamp = now.strftime("%Y-%m-%d_%H%M")
     cur = {"stamp": stamp, "stamp_human": now.strftime("%a %d %b %Y, %H:%M UTC"), "generated": now.isoformat()}
-    for key, fn in (("apophis", lambda: apophis(net)), ("satellites", lambda: satellites(net, now)),
-                    ("debris", lambda: debris(net))):
+    out_dir = Path(out_dir)
+    ev_root = EVIDENCE_ROOT if out_dir.resolve() == HERE.resolve() else out_dir / "evidence"
+    for key, fn in (("apophis", lambda: apophis(net)), ("crosscheck", lambda: crosscheck(net, ev_root / stamp)),
+                    ("satellites", lambda: satellites(net, now)), ("debris", lambda: debris(net))):
         try:
             cur[key] = fn()
         except Exception as exc:  # noqa: BLE001 - one broken source must not sink the brief
             cur[key] = {"status": "NO DATA", "error": f"{type(exc).__name__}: {exc}"}
-    out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     prev = previous(out_dir, stamp)
     cur["prev_stamp"] = (prev or {}).get("stamp")
@@ -365,7 +431,7 @@ def main(argv=None):
     print(pdf)
     if any(lvl == "alert" for lvl, _ in cur["changes"]):
         return 3
-    return 2 if any(cur[k].get("status") == "NO DATA" for k in ("apophis", "satellites", "debris")) else 0
+    return 2 if any(cur[k].get("status") == "NO DATA" for k in ("apophis", "crosscheck", "satellites", "debris")) else 0
 
 
 if __name__ == "__main__":
