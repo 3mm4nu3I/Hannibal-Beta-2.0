@@ -1,0 +1,269 @@
+{
+ "heard_of_148": {
+  "k": 2,
+  "n": 148,
+  "p": 0.013513513513513514,
+  "lo": 0.0037136718210305925,
+  "hi": 0.04792961960898595
+ },
+ "insatnogs_of_148": {
+  "k": 6,
+  "n": 148,
+  "p": 0.04054054054054054,
+  "lo": 0.01871011814260458,
+  "hi": 0.0856196570968555
+ },
+ "ers15_30d": {
+  "k": 2,
+  "n": 7,
+  "p": 0.2857142857142857,
+  "lo": 0.0822171657090155,
+  "hi": 0.6410709098517873
+ },
+ "ers15_365d": {
+  "k": 71,
+  "n": 229,
+  "p": 0.31004366812227074,
+  "lo": 0.25368668194274324,
+  "hi": 0.3726687459533028
+ },
+ "voyager": {
+  "au": 172.68630007235,
+  "d_km": 25833502789.884815,
+  "lt_h": 23.936469399666667,
+  "f_hz": 8420432097.0,
+  "space_loss_db": 319.19813671392734,
+  "pt_dbm": 40.9,
+  "gt_dbi": 48.2,
+  "loss_db": 0.42000000000000004,
+  "carrier_share_db": -6.2,
+  "dsn70": {
+   "g_r": 74.01,
+   "tsys": 21.12,
+   "pr_total_dbm": -156.5081367139273,
+   "pc_dbm": -162.7081367139273,
+   "n0_dbm_hz": -185.3522280345999,
+   "cn0_dbhz": 22.6440913206726,
+   "tau_snr10_s": 0.05439899394531149
+  },
+  "dwingeloo25": {
+   "g_r": 63.86177117258793,
+   "tsys": 50,
+   "pr_total_dbm": -166.6563655413394,
+   "pc_dbm": -172.8563655413394,
+   "n0_dbm_hz": -181.60946712985748,
+   "cn0_dbhz": 8.753101588518092,
+   "tau_snr10_s": 1.332569414954642
+  },
+  "home3": {
+   "g_r": 45.85932294512268,
+   "tsys": 50,
+   "pr_total_dbm": -184.65881376880466,
+   "pc_dbm": -190.85881376880465,
+   "n0_dbm_hz": -181.60946712985748,
+   "cn0_dbhz": -9.249346638947173,
+   "tau_snr10_s": 84.12685700471249
+  },
+  "beam_3m_deg": 1.0345741458721236,
+  "doppler_rate_hz_s": 0.9523866256123649,
+  "area_ratio_25_3": 69.44444444444446
+ },
+ "eme": [
+  {
+   "band": "6m",
+   "mhz": 50.2,
+   "antenna": "4 x 12.0 dBi Yagis",
+   "gain": 17.520599913279625,
+   "tsys": 3010.8324372035704,
+   "parts": {
+    "receiver": 40.0,
+    "sky": 2940.754663919752,
+    "moon": 0.07777328381825174,
+    "ground": 30.0
+   },
+   "path": 242.71509926593242,
+   "pr": -156.90268689217655,
+   "snr": -27.0697856682701,
+   "best": null,
+   "cw": false
+  },
+  {
+   "band": "2m",
+   "mhz": 144.1,
+   "antenna": "4 x 15.0 dBi Yagis",
+   "gain": 20.520599913279625,
+   "tsys": 272.501447535894,
+   "parts": {
+    "receiver": 40.0,
+    "sky": 202.34626943358003,
+    "moon": 0.1551781023139368,
+    "ground": 30.0
+   },
+   "path": 251.87430453931185,
+   "pr": -160.06189216555597,
+   "snr": -19.795813215100225,
+   "best": "Q65 (digital)",
+   "cw": false
+  },
+  {
+   "band": "70cm",
+   "mhz": 432.1,
+   "antenna": "4 x 18.0 dBi Yagis",
+   "gain": 23.520599913279625,
+   "tsys": 85.14670819823108,
+   "parts": {
+    "receiver": 40.0,
+    "sky": 14.837087178575693,
+    "moon": 0.3096210196553831,
+    "ground": 30.0
+   },
+   "path": 261.41271024925663,
+   "pr": -163.60029787550076,
+   "snr": -18.282209415456748,
+   "best": "Q65 (digital)",
+   "cw": false
+  },
+  {
+   "band": "23cm",
+   "mhz": 1296.1,
+   "antenna": "3.0 m prime-focus dish @ 55%",
+   "gain": 29.605405597029662,
+   "tsys": 64.69419904508764,
+   "parts": {
+    "receiver": 40.0,
+    "sky": 3.437269297003664,
+    "moon": 1.2569297480839738,
+    "ground": 20.0
+   },
+   "path": 270.9537951354019,
+   "pr": -160.97177139414595,
+   "snr": -14.46065771160687,
+   "best": "Q65 (digital)",
+   "cw": true
+  },
+  {
+   "band": "13cm",
+   "mhz": 2320.1,
+   "antenna": "3.0 m prime-focus dish @ 55%",
+   "gain": 34.662769466204,
+   "tsys": 66.8946466631102,
+   "parts": {
+    "receiver": 40.0,
+    "sky": 2.8670368360328613,
+    "moon": 4.027609827077329,
+    "ground": 20.0
+   },
+   "path": 276.0111590045762,
+   "pr": -155.91440752497158,
+   "snr": -9.54855407987506,
+   "best": "Q65 (digital)",
+   "cw": true
+  },
+  {
+   "band": "3cm",
+   "mhz": 10368.1,
+   "antenna": "3.0 m prime-focus dish @ 55%",
+   "gain": 47.66661893072789,
+   "tsys": 143.1363140395451,
+   "parts": {
+    "receiver": 40.0,
+    "sky": 2.703671313306552,
+    "moon": 80.43264272623856,
+    "ground": 20.0
+   },
+   "path": 289.01500846910017,
+   "pr": -142.91055806044776,
+   "snr": 0.15171073273890556,
+   "best": "Q65 (digital)",
+   "cw": true
+  }
+ ],
+ "eme_range_km": 379310.0,
+ "eme_rtt_s": 2.530483938992221,
+ "apophis": {
+  "designation": "99942",
+  "window": [
+   "2026-10-23",
+   "2200-01-01"
+  ],
+  "dist_max_au": 0.05,
+  "orbit": {
+   "name": "99942 Apophis (2004 MN4)",
+   "orbit_id": "220",
+   "condition_code": "0",
+   "data_arc_days": "6599",
+   "n_obs": 7370,
+   "last_obs": "2022-04-09",
+   "diameter_km": "0.34",
+   "H": "19.09"
+  },
+  "sentry": {
+   "state": "removed",
+   "removed": "2021-02-21 08:22:28"
+  },
+  "passes": [
+   {
+    "date": "2029-Apr-13 21:46",
+    "distance_km": 38011.45916295157,
+    "min_km": 38008.18140734614,
+    "max_km": 38014.73694181259,
+    "window_km": 6.555534466446261,
+    "v_rel_kms": 7.42253895678452,
+    "time_uncertainty": "< 00:01",
+    "clearance_above_atmosphere_km": 31530.044407346144,
+    "margin_ratio": 4809.683263619313,
+    "lunar_distances": 0.0988851695186045,
+    "inside_geo": true,
+    "rough": false,
+    "verdict": "EXCLUDED"
+   },
+   {
+    "date": "2051-Apr-20 02:05",
+    "distance_km": 6206849.019475985,
+    "min_km": 5969533.176014308,
+    "max_km": 6444221.047609779,
+    "window_km": 474687.87159547117,
+    "v_rel_kms": 4.69385481977169,
+    "time_uncertainty": "08:07",
+    "clearance_above_atmosphere_km": 5963055.039014308,
+    "margin_ratio": 12.562054764474835,
+    "lunar_distances": 16.14684968646198,
+    "inside_geo": false,
+    "rough": false,
+    "verdict": "EXCLUDED"
+   },
+   {
+    "date": "2102-Sep-11 20:52",
+    "distance_km": 3499720.3257977692,
+    "min_km": 3365402.1124721263,
+    "max_km": 3856962.7146918816,
+    "window_km": 491560.6022197553,
+    "v_rel_kms": 5.66609899314895,
+    "time_uncertainty": "15:17",
+    "clearance_above_atmosphere_km": 3358923.975472126,
+    "margin_ratio": 6.8331838644190155,
+    "lunar_distances": 9.1043712949994,
+    "inside_geo": false,
+    "rough": false,
+    "verdict": "EXCLUDED"
+   },
+   {
+    "date": "2116-Apr-12 21:44",
+    "distance_km": 2627072.7362613273,
+    "min_km": 154849.44637788375,
+    "max_km": 15607489.764947703,
+    "window_km": 15452640.318569819,
+    "v_rel_kms": 6.39045174329063,
+    "time_uncertainty": "7_11:21",
+    "clearance_above_atmosphere_km": 148371.30937788376,
+    "margin_ratio": 0.009601680121913037,
+    "lunar_distances": 6.834216275393671,
+    "inside_geo": false,
+    "rough": true,
+    "verdict": "EXCLUDED"
+   }
+  ],
+  "verdict": "EXCLUDED",
+  "reason": "Every pass clears the atmosphere and the object is removed from JPL's Sentry risk list."
+ }
+}
