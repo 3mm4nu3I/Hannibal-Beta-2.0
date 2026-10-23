@@ -3,6 +3,33 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-23, night] `[L]` Where it will be: flyby track, 3-sigma envelope, impact-off-Lisbon test
+
+### Why
+`[W]` says where an asteroid won't be (Earth). The other half: where it will be, minute by minute, how sure JPL is at each pass, and a test that can prove a specific impact impossible. The test case is an impact in the Atlantic off Lisbon.
+
+### Added
+- **`hannibal_neo_where.py` + `[L] Where it will be`** (also `python hannibal_orbital.py --neo-where 99942` or `python hannibal_neo_where.py 99942 --target LAT LON NAME`). Uses NASA/JPL Horizons observer tables with 3-sigma covariance (through `hannibal_net`, cached 6 h, no key) plus the `[W]` close-approach list and Sentry status.
+  - TRACK: every minute for 3 h either side of the closest pass. Shows the distance, the point on Earth it is over (sub-point, from Greenwich apparent sidereal time), the magnitude, and the 3-sigma box (along x across the sky, +/- range) in km.
+  - ENVELOPE: the same box at every close approach to 2200.
+  - IMPOSSIBLE-EVENT TEST: a topocentric table for one surface point (default 38.70N 9.60W, off Lisbon) over +/-12 h. Gives the closest approach to the point and the nearest 3-sigma edge. IMPOSSIBLE when that edge stays above the atmosphere. Also reports when the object is above the horizon there and when it is up in a dark sky. If Sentry still lists the object, or Sentry is unreachable, the report says the result covers this flyby only.
+- `test_hannibal_neo_where.py` (offline, trimmed real Horizons tables, fake network).
+
+### Changed
+- `[W]` labels its dates as TDB, which is what JPL's close-approach data uses, and notes the offset. Apophis's "21:46" is 21:46:13 TDB = 21:45:03 UTC.
+
+### Verified (live, 23 Oct 2026, orbit 220)
+- Apophis closest at 21:45 UTC on 13 Apr 2029: 38,015 km from the centre, over 29.0N 43.1W (mid-Atlantic). 3-sigma box 2.5 x 1.7 km, +/-3.3 km.
+- Sub-point check: Horizons, asked for the view from the computed point, puts Apophis at 89.8 deg elevation.
+- Off Lisbon: closest 32,495 km at 21:39 UTC, nearest 3-sigma edge 32,492 km, so 32,392 km above the atmosphere. IMPOSSIBLE. It is up in a dark sky there from 19:41 UTC, peaking at magnitude 2.8.
+- Envelope: 2051 box 221,280 x 49 km (+/-237,314); 2102 1.9 million x 207 km; 2116 10.3 million km (rough).
+- All orbital tests pass.
+
+### Not done / limits
+- The boxes are Horizons' linearised covariance, which can't be trusted for the 2116 pass (marked ~rough). For that pass Sentry decides.
+- UT1-UTC is ignored in the sub-point (< 0.004 deg of longitude).
+- Not added to `hannibal_terminal.spec` hidden imports, the same as `[W]` (see the note further down).
+
 ## [2026-10-23, later] Moonbounce: choose dish or Yagi, band-aware noise
 
 ### Why
