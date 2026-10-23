@@ -23,7 +23,7 @@
 | Key | What | Who |
 |---|---|---|
 | `HANNIBAL_NORMAL.bat` / `HANNIBAL_LOW_INTERNET.bat` | start with the normal or the bad-connection network profile | everyone |
-| `[E]` Moonbounce (new 2026-10-16) | EME link budget: can your station hear its own echo off the Moon? Moon range from JPL Horizons. Transmitting needs a licence. `python hannibal_orbital.py --eme` | everyone |
+| `[E]` Moonbounce (new 2026-10-16, antennas + noise 2026-10-23) | EME link budget: can your station hear its own echo off the Moon? Choose a dish (prime-focus, offset, mesh) or a Yagi array on any band; system noise worked out per band (receiver + sky + Moon + ground). Moon range from JPL Horizons. Transmitting needs a licence. `python hannibal_orbital.py --eme` | everyone |
 | `[Z]` Zombie check (new 2026-10-22) | which satellites on a list still transmit something an amateur station can hear: SatNOGS transmitters on record + vetted observations in the last 30 days, and whether any has an uplink. Default: the 148 military objects from the 17 Oct export. No key. `python hannibal_zombie.py` | everyone |
 | `[W]` Where it won't be (new 2026-10-22) | Earth-impact exclusion for any asteroid or comet from NASA/JPL: every close approach to 2200, nearest edge of the uncertainty window vs the atmosphere, verdict defers to JPL Sentry. No key. `python hannibal_neo.py 99942` | everyone |
 | `[D]` Debris cascade (new 2026-10-22) | Kessler watch from the public CelesTrak catalog: objects per 50 km shell, drag cleanup time, cascade index, and how far the assumptions must move before each shell crosses the line. No key. `python hannibal_kessler.py` | everyone |
@@ -100,7 +100,11 @@ box-score screens. Soviet space art lives in `hannibal_art.py` (menu `[A]`, or `
 
 * `[L]` fleet link health (press again to force a rescan)
 * `[B]` open the 3D BlueGlobe dashboard
-* `[E]` **Moonbounce (EME)** -- can your station hear its own echo off the Moon? Live link budget (dish, power, band) using the Moon's current range/range-rate from Horizons; also `python hannibal_orbital.py --eme`. Set the station with `HANNIBAL_EME_BAND/_DISH_M/_PT_W/_TSYS_K`.
+* `[E]` **Moonbounce (EME)** -- can your station hear its own echo off the Moon? Live link budget using the Moon's current range/range-rate from Horizons; also `python hannibal_orbital.py --eme`.
+  * **Antenna:** answer `D` for a dish (then its kind: `prime-focus` 55%, `offset` 65% or `mesh` 45% efficiency, and its diameter) or `Y` for a Yagi array (gain of one Yagi and how many; each doubling adds 3 dB, less 0.5 dB phasing loss). A bare number still means a prime-focus dish of that diameter, so `RUN_EME.bat` keeps working. Defaults: 4 Yagis on 6 m (12 dBi each), 2 m (15 dBi) and 70 cm (18 dBi); a 3 m prime-focus dish from 23 cm up.
+  * **System noise:** press Enter at the Tsys prompt and it is worked out for the band and antenna: receiver 40 K + galactic sky (about 200 K on 2 m, about 3,000 K on 6 m, a few K on 23 cm) + the Moon's own glow in the beam (tens of K on 3 cm) + ground pickup (Yagis 30 K; dishes 10-25 K by kind). Type a number to set it yourself. The breakdown is printed next to the noise floor.
+  * **Processing gain** is shown for interest only and labelled as such: the mode thresholds already include the decoder's averaging, so it is never added to the SNR.
+  * Settings: `HANNIBAL_EME_BAND/_PT_W/_ANTENNA/_DISH_KIND/_DISH_M/_EFF/_YAGI_DBI/_YAGI_N`, noise `HANNIBAL_EME_TSYS_K` (fixed total), `_TRX_K`, `_TGROUND_K`, `_SKY144_K`.
 * `[V]` Orbital Ops page; press `[V]` again to open the menu (asks for your logins once, then shows Military + Globalstar overhead)
 
 ## The Orbital Ops menu

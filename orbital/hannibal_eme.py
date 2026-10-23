@@ -15,9 +15,17 @@ References for the model:
   * parabolic-dish gain                        G = eta * (pi * D / lambda)^2
   * two-way Doppler                            f_d = -2 * f0 * v_radial / c   (v>0 = receding)
   * thermal noise                              N = k_B * T_sys * B
-  * coherent processing gain                   G_p = 10*log10(B * tau)
+  * coherent processing gain                   G_p = 10*log10(B * tau)  (a theoretical ceiling only)
+  * Yagi array gain                            G = G_1 + 10*log10(N) - phasing loss
+  * system noise                               T_sys = T_receiver + T_sky + T_moon + T_ground
+  * galactic sky noise                         T_sky = 2.7 K + T_144 * (f / 144 MHz)^-2.55
 SNR is reported in a 2500 Hz reference bandwidth, the WSJT-X convention, so the verdict can be
-compared against the published decode thresholds of the modes EME actually uses.
+compared against the published decode thresholds of the modes EME actually uses. Those thresholds
+already include what the decoder gains from averaging, which is why the processing-gain figure is
+shown for interest and never added to the SNR.
+
+Antennas: a dish (prime-focus, offset or mesh) or an array of Yagis, on any band. Typical EME
+stations use Yagi arrays on 6 m, 2 m and 70 cm and dishes from 23 cm up, so those are the defaults.
 """
 import math
 import os
@@ -68,6 +76,105 @@ def dish_gain_dbi(diameter_m, f_hz, efficiency=0.55):
     lam = wavelength(f_hz)
     g = efficiency * (math.pi * diameter_m / lam) ** 2
     return 10.0 * math.log10(g)
+
+
+# ---------------------------------------------------------------- antennas ----
+# Typical values, not measurements. Each can be overridden at the [E] prompts or with HANNIBAL_EME_* env vars.
+DISH_KINDS = {
+    # kind: (aperture efficiency, ground noise picked up past the dish edge, K)
+    "prime-focus": (0.55, 20.0),   # feed in front of the dish: some blockage and spillover
+    "offset": (0.65, 10.0),        # feed out of the beam: less blockage, spillover mostly sees sky
+    "mesh": (0.45, 25.0),          # home-built or mesh surface: rougher, some ground leaks through
+}
+YAGI_BANDS = ("6m", "2m", "70cm")  # where EME stations normally use Yagi arrays rather than dishes
+YAGI_DEFAULT_DBI = {"6m": 12.0, "2m": 15.0, "70cm": 18.0}   # one long-boom Yagi; 20 dBi on higher bands
+YAGI_HIGH_BAND_DBI = 20.0
+YAGI_DEFAULT_COUNT = 4
+YAGI_COMBINE_LOSS_DB = 0.5         # phasing lines and power dividers, when there is more than one Yagi
+YAGI_GROUND_K = 30.0               # side and back lobes see the warm ground, worst with the Moon low
+
+
+def yagi_array_gain_dbi(single_dbi, count=1, combine_loss_db=YAGI_COMBINE_LOSS_DB):
+    """Gain of N identical Yagis phased together: +3 dB per doubling, minus the phasing losses."""
+    n = max(1, int(count))
+    return float(single_dbi) + 10.0 * math.log10(n) - (combine_loss_db if n > 1 else 0.0)
+
+
+def dish_efficiency(antenna):
+    """Aperture efficiency for a dish: an explicit value wins, else the typical value for its kind."""
+    eff = antenna.get("efficiency")
+    return float(eff) if eff else DISH_KINDS[antenna.get("kind") or "prime-focus"][0]
+
+
+def antenna_gain_dbi(antenna, f_hz):
+    """Gain of a dish {'type': 'dish', 'kind', 'diameter_m'} or a Yagi array {'type': 'yagi', 'gain_dbi', 'count'}."""
+    if antenna["type"] == "yagi":
+        return yagi_array_gain_dbi(antenna["gain_dbi"], antenna.get("count", 1))
+    return dish_gain_dbi(antenna["diameter_m"], f_hz, dish_efficiency(antenna))
+
+
+def describe_antenna(antenna):
+    if antenna["type"] == "yagi":
+        n = max(1, int(antenna.get("count", 1)))
+        return f"{n} x {antenna['gain_dbi']:.1f} dBi Yagi" + ("s" if n > 1 else "")
+    return f"{antenna['diameter_m']:.1f} m {antenna.get('kind') or 'prime-focus'} dish @ {dish_efficiency(antenna):.0%}"
+
+
+def parse_antenna_answer(text, default_type):
+    """'d'/'dish' -> ('dish', None); 'y'/'yagi' -> ('yagi', None); a bare number -> ('dish', diameter).
+
+    The bare number keeps older scripts working: RUN_EME.bat answers the old dish-diameter prompt with '3'.
+    Raises ValueError for anything else.
+    """
+    t = str(text or "").strip().lower()
+    if not t:
+        return default_type, None
+    if t in ("d", "dish"):
+        return "dish", None
+    if t in ("y", "yagi", "yagis"):
+        return "yagi", None
+    diameter = float(t)                  # ValueError for nonsense, which the screen reports
+    if diameter <= 0:
+        raise ValueError("dish diameter must be positive")
+    return "dish", diameter
+
+
+# ------------------------------------------------------------------- noise ----
+T_CMB_K = 2.7                      # cosmic microwave background
+COLD_SKY_144_K = 200.0             # galactic background at 144 MHz, away from the Milky Way's plane
+GALACTIC_SPECTRAL_INDEX = 2.55     # galactic noise falls as f^-2.55
+T_MOON_K = 210.0                   # the Moon's own thermal glow at centimetre waves
+MOON_DIAMETER_DEG = 0.52
+T_RX_K = 40.0                      # a good low-noise preamp (noise figure about 0.55 dB)
+
+
+def sky_temp_k(f_hz, cold_sky_144_k=COLD_SKY_144_K):
+    """Sky noise behind the Moon: CMB plus galactic background, which dominates below ~300 MHz.
+
+    The galactic part can be three times higher or more when the Moon is near the Milky Way's plane.
+    """
+    return T_CMB_K + float(cold_sky_144_k) * (float(f_hz) / 144e6) ** (-GALACTIC_SPECTRAL_INDEX)
+
+
+def beamwidth_deg(gain_dbi):
+    """Approximate half-power beamwidth of a pencil beam from its gain (G ~ 41253 / theta^2)."""
+    return math.sqrt(41253.0 / 10.0 ** (float(gain_dbi) / 10.0))
+
+
+def moon_noise_k(gain_dbi, t_moon_k=T_MOON_K):
+    """The Moon's thermal noise in the beam: its temperature times the share of the beam it fills."""
+    fill = min(1.0, (MOON_DIAMETER_DEG / beamwidth_deg(gain_dbi)) ** 2)
+    return float(t_moon_k) * fill
+
+
+def system_temp_k(f_hz, antenna, gain_dbi, t_rx_k=T_RX_K, t_ground_k=None, cold_sky_144_k=COLD_SKY_144_K):
+    """Total system noise temperature and its parts: receiver + sky + Moon + ground. Returns (total, parts)."""
+    if t_ground_k is None:
+        t_ground_k = (YAGI_GROUND_K if antenna["type"] == "yagi"
+                      else DISH_KINDS[antenna.get("kind") or "prime-focus"][1])
+    parts = {"receiver": float(t_rx_k), "sky": sky_temp_k(f_hz, cold_sky_144_k),
+             "moon": moon_noise_k(gain_dbi), "ground": float(t_ground_k)}
+    return sum(parts.values()), parts
 
 
 def two_way_doppler_hz(f_hz, range_rate_kms):
@@ -178,13 +285,44 @@ def _envf(name, default):
 
 
 def station_defaults():
-    """A reasonable serious-amateur 23 cm station; override with HANNIBAL_EME_* env vars."""
+    """A reasonable serious-amateur 23 cm station; override with HANNIBAL_EME_* env vars.
+
+    t_sys_k is None unless HANNIBAL_EME_TSYS_K is set: then the system noise is worked out for the
+    band and antenna (system_temp_k) instead of one fixed figure for every band.
+    """
     band = os.getenv("HANNIBAL_EME_BAND", "23cm").strip().lower()
     f_hz = BANDS.get(band, BANDS["23cm"])
     return {
         "band": band if band in BANDS else "23cm", "f_hz": _envf("HANNIBAL_EME_FREQ_HZ", f_hz),
         "pt_w": _envf("HANNIBAL_EME_PT_W", 300.0), "dish_m": _envf("HANNIBAL_EME_DISH_M", 3.0),
-        "efficiency": _envf("HANNIBAL_EME_EFF", 0.55), "t_sys_k": _envf("HANNIBAL_EME_TSYS_K", 100.0),
+        "efficiency": _envf("HANNIBAL_EME_EFF", None), "t_sys_k": _envf("HANNIBAL_EME_TSYS_K", None),
+        "t_rx_k": _envf("HANNIBAL_EME_TRX_K", T_RX_K), "t_ground_k": _envf("HANNIBAL_EME_TGROUND_K", None),
+        "sky_144_k": _envf("HANNIBAL_EME_SKY144_K", COLD_SKY_144_K),
         "bw_hz": _envf("HANNIBAL_EME_BW_HZ", WSJT_REF_BW), "integ_s": _envf("HANNIBAL_EME_INTEG_S", 60.0),
         "l_misc_db": _envf("HANNIBAL_EME_LMISC_DB", 4.0),
     }
+
+
+def antenna_defaults(band):
+    """What the [E] prompts offer for a band: Yagi arrays on 6 m / 2 m / 70 cm, a dish from 23 cm up.
+
+    HANNIBAL_EME_ANTENNA (dish/yagi), _DISH_KIND, _DISH_M, _EFF, _YAGI_DBI and _YAGI_N override.
+    """
+    typ = os.getenv("HANNIBAL_EME_ANTENNA", "").strip().lower()
+    if typ not in ("dish", "yagi"):
+        typ = "yagi" if band in YAGI_BANDS else "dish"
+    kind = os.getenv("HANNIBAL_EME_DISH_KIND", "").strip().lower()
+    return {
+        "type": typ, "dish_kind": kind if kind in DISH_KINDS else "prime-focus",
+        "dish_m": _envf("HANNIBAL_EME_DISH_M", 3.0), "efficiency": _envf("HANNIBAL_EME_EFF", None),
+        "yagi_dbi": _envf("HANNIBAL_EME_YAGI_DBI", YAGI_DEFAULT_DBI.get(band, YAGI_HIGH_BAND_DBI)),
+        "yagi_n": int(_envf("HANNIBAL_EME_YAGI_N", YAGI_DEFAULT_COUNT)),
+    }
+
+
+def default_antenna(band):
+    """The antenna dict antenna_defaults(band) describes, ready for antenna_gain_dbi()."""
+    a = antenna_defaults(band)
+    if a["type"] == "yagi":
+        return {"type": "yagi", "gain_dbi": a["yagi_dbi"], "count": a["yagi_n"]}
+    return {"type": "dish", "kind": a["dish_kind"], "diameter_m": a["dish_m"], "efficiency": a["efficiency"]}

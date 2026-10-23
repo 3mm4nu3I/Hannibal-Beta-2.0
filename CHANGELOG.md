@@ -3,6 +3,13 @@
 Newest first. Each entry says what changed, why, and what was and was not verified.
 Per-module detail lives next to the module (e.g. orbital/CHANGELOG_telemetry.md).
 
+## 2026-10-23 (later) — Moonbounce: choose dish or Yagi, band-aware noise
+- `[E]` now asks for the antenna: a dish (prime-focus, offset or mesh, and its diameter) or a Yagi array (gain of one Yagi and how many), on any band. Defaults: Yagi arrays on 6 m / 2 m / 70 cm, a 3 m dish from 23 cm up.
+- System noise is worked out per band and antenna (receiver + galactic sky + the Moon's own glow + ground) instead of one fixed 100 K. A 4-Yagi 2 m station had looked 4.3 dB better than it is.
+- The +51.8 dB processing-gain line is labelled as a theoretical ceiling that is not in the SNR.
+- `RUN_EME.bat` keeps working unchanged (same answers, same result). 14 EME tests pass; live runs over Antwerp for 23 cm and 2 m.
+- Full detail: orbital/CHANGELOG.md
+
 ## 2026-10-23 — Sync: the laptop's work merged into main
 - `feature/eme-moonbounce` (16-17 Oct: home-location fix, `[E]` Moonbounce, N2YO altitude guard) merged into main. It matches the laptop's running copy exactly, so main now holds everything: the laptop's work plus `[W]`, `[D]` and `[Z]`.
 - One conflict (orbital/CHANGELOG.md), both sides kept. All tests pass; `[Z]`, `[W]`, `[E]` checked through the merged menu. Backup of main: branch `backup/main-2026-10-23-pre-sync`.
