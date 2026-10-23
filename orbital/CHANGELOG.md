@@ -3,6 +3,16 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-24, night] Pre-registered C9: brightness against prediction ("the rock gets bigger")
+
+### Added
+- **`hannibal_photometry_check.py`** (proposed by the investigators). Compares your measured magnitudes with JPL Horizons' predicted magnitude at the same time and station. It is self-calibrated: each station and band is judged against its own first 3 nights, so H, filter and zero-point offsets cancel. C9 fires on a drift more than 0.3 mag and more than 3 sigma brighter, 2 nights in a row, confirmed by a second station. The script also reports the implied true/predicted distance (5 log10 k = drift) and the phase angle for the hand check.
+- `PREREGISTRATION.md` section 4e, plus C9 in the observing plan and the study report's criteria table.
+- `test_hannibal_photometry_check.py`: constant offsets cancel; the tumbling allowance, the 3-sigma rule, the 2-night rule and the 2-station rule each block a false fire; too few nights never fires.
+
+### Limits (written into the pre-registration)
+- Far from Earth, a realistic change of path barely changes the distance, so C9 is sensitive mainly in the final days. Position measurements catch a change much earlier. C9 is an independent cross-check that needs no orbit model.
+
 ## [2026-10-23, after midnight] Hypothesis H-A (C6 to C8), observing plan, O-C checker
 
 ### Added

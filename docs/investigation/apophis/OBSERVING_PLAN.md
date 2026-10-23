@@ -5,7 +5,7 @@ Made with `orbital/hannibal_obsplan.py` from JPL Horizons on 23 Oct 2026; the fu
 ## The two methods
 
 1. **Astrometry: where it is (decisive for C3, C5 and C6).** Take at least 3 positions per night (a tracklet) over 30 to 60 minutes at SNR ≥ 10, measured against Gaia DR3. Timestamp each frame at mid-exposure from a synchronised clock: Apophis moves 1 to 4" a minute, so a 1-second clock error costs up to 0.07". Check every tracklet with `orbital/hannibal_astrometry_check.py`, which compares it with JPL's prediction (O−C). Then submit it to the Minor Planet Center in ADES format, under the telescope's observatory code. That's how it enters JPL's and ESA's orbit fits, and the daily cross-check would then see any effect.
-2. **Photometry: how bright it is (C8).** Use SNR ≥ 50 per point and long runs. Apophis tumbles, with a main period of about 30.6 h, so one night covers only part of a cycle; nights from sites on different continents fill the gaps. Use the same filter every time (r or V), and add colour (g−r) on the brightest nights.
+2. **Photometry: how bright it is (C8 and C9).** Use SNR ≥ 50 per point and long runs. Apophis tumbles, with a main period of about 30.6 h, so one night covers only part of a cycle; nights from sites on different continents fill the gaps. Use the same filter every time (r or V), and add colour (g−r) on the brightest nights.
 
 ## The two windows
 
@@ -67,4 +67,5 @@ For C7 (radio, hypothesis H-A):
 1. Book the site and night from the table, ideally on the "best night".
 2. Take frames, plate-solve them against Gaia DR3, and measure positions (Astrometrica, Tycho Tracker or similar) and magnitudes.
 3. Run `python orbital/hannibal_astrometry_check.py night.csv` (columns: utc, ra_deg, dec_deg, station, sigma_arcsec).
-4. If the result is consistent: submit to the MPC and archive the CSV and report under `evidence/observations/`. If a tracklet is flagged: check the clock, catalogue and mid-exposure times, re-observe, and get a second station. Only then does it count toward C3, C5 or C6.
+4. Run `python orbital/hannibal_photometry_check.py night_phot.csv` (columns: utc, mag, mag_err, station, band). This is pre-registered criterion C9: brighter than predicted, and so possibly closer, judged against the same station's own first nights.
+5. If the result is consistent: submit to the MPC and archive the CSV and report under `evidence/observations/`. If a tracklet is flagged: check the clock, catalogue and mid-exposure times, re-observe, and get a second station. Only then does it count toward C3, C5 or C6.

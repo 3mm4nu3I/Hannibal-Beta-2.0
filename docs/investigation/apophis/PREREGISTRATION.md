@@ -38,7 +38,7 @@ Every judgement uses the worst case the data allows:
 - **Consequences:** the upper end of Apophis's size and density, 370 m and 3.5 g/cm³, at its 12.6 km/s impact speed (Earth's gravity included). That gives about 1,800 Mt, roughly 35 Tsar Bombas. Heat, blast and tsunami are shares of this energy, not additions to it.
 - **Detection:** the conservative telescope model.
 
-The worst case sets how bad an impact would be. Whether an impact can happen is still decided only by the data and criteria C1 to C8.
+The worst case sets how bad an impact would be. Whether an impact can happen is still decided only by the data and criteria C1 to C9.
 
 ## 4. What counts as real reason for concern (fixed now, in advance)
 
@@ -105,6 +105,21 @@ Notes, recorded now so nobody can reinterpret them later:
 - Both predictions are misses: 28,000 km is still about 21,500 km above the surface.
 - Bram's range sits about 9,000 to 10,000 km below the current prediction, which is several thousand times JPL's stated uncertainty. If it is right, the models were wrong. The daily brief would show it well before the flyby: C5 fires on the first new orbit solution that moves the 2029 distance by more than 3.3 km, and C6 if a push is detected.
 - A result between the two ranges counts as a win for neither, but it would still prove the model wrong if it falls outside the 3-sigma window.
+
+### 4e. C9, the photometric distance check: "the rock gets bigger when it should get smaller" (added 23 Oct 2026, commit: this section's own commit)
+
+Proposed by the investigators. It tests the orbit with the study's own telescope time instead of trusting anyone's model. If Apophis is closer than predicted, it looks brighter: brightness goes as distance⁻², so a true distance k times the predicted one gives a residual of 5·log10(k) magnitudes. 10% closer is 0.23 mag brighter; Bram's 28,500 km against 38,011 km at closest approach would be 0.62 mag brighter in the final hours.
+
+Method, fixed now: `orbital/hannibal_photometry_check.py` compares each measured magnitude with JPL Horizons' predicted magnitude (APmag) at the same time and station. Absolute comparison isn't reliable (JPL's H = 19.09 and ESA's 18.89 differ by 0.2 mag; filters and the phase law add more), so the check is **self-calibrated**: each station and band is compared with its own first 3 nights.
+
+**C9 fires** only when all of these hold:
+1. A station has a baseline of at least 3 nights (the median residual).
+2. A later night's mean residual is brighter than that baseline by more than 0.3 mag (above the allowance for Apophis's tumbling, up to about 1 mag peak to peak, averaged over a night) **and** by more than 3 sigma of that night's mean.
+3. This happens on at least 2 nights in a row at that station.
+4. A second, independent station shows the same.
+5. The drift does not simply follow the phase angle, which would point to the brightness model, not the distance. This one is checked by hand.
+
+What C9 can and cannot do, recorded so it isn't over-read: far from Earth, a realistic change of path changes the distance by a tiny fraction, so C9 becomes sensitive mainly in the final days before closest approach. Position measurements (C3, C5 and C6, plus the study's own astrometry) detect a change much earlier. C9 is an independent cross-check that needs no orbit model, not the first line of defence. Like every criterion, a fire triggers manual verification (section 7), not a conclusion.
 
 ## 5. What would refute the concern
 

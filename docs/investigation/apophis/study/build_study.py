@@ -335,7 +335,7 @@ def report(rows, summary, figs, path):
     s += [P("Abstract", h2), P(
         f"We monitored the public orbit products of NASA/JPL and ESA NEOCC for asteroid 99942 Apophis, hourly, from "
         f"{summary['first_utc']} to {summary['last_utc']} ({summary['snapshots_verified']} verified snapshots, every raw "
-        f"reply hashed with SHA-256). Before collecting data we fixed eight criteria (C1 to C8) for what would count as "
+        f"reply hashed with SHA-256). Before collecting data we fixed nine criteria (C1 to C9) for what would count as "
         f"real reason for concern: risk listings, a pass reaching the atmosphere, disagreement between the agencies, "
         f"an impact solution at a point off Lisbon, a shift of the 2029 distance, and a push the Yarkovsky model "
         f"doesn't explain. C1 to C6 are evaluated automatically. Over the period, JPL's predicted 2029 distance "
@@ -357,7 +357,8 @@ def report(rows, summary, figs, path):
              ["C5", f"A new JPL solution moves the 2029 distance by > {P2029_3SIGMA_KM} km (3 sigma of solution 220)", "automatic"],
              ["C6", "Yarkovsky A2 moves > 3 sigma, a radial or normal push becomes significant, or JPL and ESA disagree on A2", "automatic"],
              ["C7", "Narrowband radio signal tracking Apophis, confirmed by a second station (2029 flyby)", "manual, not yet possible"],
-             ["C8", "Light curve, spin or colour inconsistent with a natural body, or close-up imaging", "manual, not yet possible"]],
+             ["C8", "Light curve, spin or colour inconsistent with a natural body, or close-up imaging", "manual, not yet possible"],
+             ["C9", "Measured brightness drifts > 0.3 mag and 3 sigma brighter than JPL's prediction, 2 nights, 2 stations (self-calibrated)", "own photometry, from Dec 2026"]],
             [18, 116, 40]),
           Spacer(1, 4),
           P("Hypotheses: H0, the agencies' orbit models are correct; H-A (stated by the investigators), Apophis is "
