@@ -1,0 +1,262 @@
+{
+  "stamp": "2026-10-23_2039",
+  "stamp_human": "Fri 23 Oct 2026, 20:39 UTC",
+  "generated": "2026-10-23T20:39:58.183704+00:00",
+  "apophis": {
+    "status": "ok",
+    "verdict": "EXCLUDED",
+    "reason": "Every pass clears the atmosphere and the object is removed from JPL's Sentry risk list.",
+    "orbit_id": "220",
+    "condition_code": "0",
+    "n_obs": 7370,
+    "last_obs": "2022-04-09",
+    "sentry": "removed",
+    "sentry_removed": "2021-02-21 08:22:28",
+    "passes": [
+      {
+        "date": "2029-Apr-13 21:46",
+        "distance_km": 38011.45916295157,
+        "min_km": 38008.18140734614,
+        "window_km": 6.555534466446261,
+        "clearance_above_atmosphere_km": 31530.044407346144,
+        "verdict": "EXCLUDED",
+        "rough": false
+      },
+      {
+        "date": "2051-Apr-20 02:05",
+        "distance_km": 6206849.019475985,
+        "min_km": 5969533.176014308,
+        "window_km": 474687.87159547117,
+        "clearance_above_atmosphere_km": 5963055.039014308,
+        "verdict": "EXCLUDED",
+        "rough": false
+      },
+      {
+        "date": "2102-Sep-11 20:52",
+        "distance_km": 3499720.3257977692,
+        "min_km": 3365402.1124721263,
+        "window_km": 491560.6022197553,
+        "clearance_above_atmosphere_km": 3358923.975472126,
+        "verdict": "EXCLUDED",
+        "rough": false
+      },
+      {
+        "date": "2116-Apr-12 21:44",
+        "distance_km": 2627072.7362613273,
+        "min_km": 154849.44637788375,
+        "window_km": 15452640.318569819,
+        "clearance_above_atmosphere_km": 148371.30937788376,
+        "verdict": "EXCLUDED",
+        "rough": true
+      }
+    ],
+    "p2029": {
+      "date": "2029-Apr-13 21:46",
+      "distance_km": 38011.45916295157,
+      "min_km": 38008.18140734614,
+      "window_km": 6.555534466446261
+    },
+    "where": {
+      "status": "ok",
+      "closest_utc": "2029-Apr-13 21:45",
+      "closest_km": 38015.03850902985,
+      "sub_lat": 28.97029297663499,
+      "sub_lon": -43.06967802764473,
+      "box": [
+        2.5208842273538856,
+        1.6568759470618093,
+        3.2776
+      ],
+      "envelope": [
+        {
+          "date": "2029-Apr-13 21:46",
+          "distance_km": 38011.45916295157,
+          "time_uncertainty": "< 00:01",
+          "rough": false,
+          "along_km": 2.5232190922766358,
+          "across_km": 1.675019365274658,
+          "range_pm_km": 3.2805
+        },
+        {
+          "date": "2051-Apr-20 02:05",
+          "distance_km": 6206849.019475985,
+          "time_uncertainty": "08:07",
+          "rough": false,
+          "along_km": 221279.58728786107,
+          "across_km": 49.361230830196945,
+          "range_pm_km": 237314.347
+        },
+        {
+          "date": "2102-Sep-11 20:52",
+          "distance_km": 3499720.3257977692,
+          "time_uncertainty": "15:17",
+          "rough": false,
+          "along_km": 1887133.1342452725,
+          "across_km": 206.74650297374086,
+          "range_pm_km": 243130.748
+        },
+        {
+          "date": "2116-Apr-12 21:44",
+          "distance_km": 2627072.7362613273,
+          "time_uncertainty": "7_11:21",
+          "rough": true,
+          "along_km": 10290190.462637005,
+          "across_km": 24.702584700281086,
+          "range_pm_km": 12716358.3
+        }
+      ],
+      "lisbon": {
+        "verdict": "IMPOSSIBLE",
+        "closest_km": 32495.17467973197,
+        "closest_time": "2029-Apr-13 21:39",
+        "nearest_edge_km": 32491.89197973197,
+        "clearance_above_atmosphere_km": 32391.89197973197,
+        "dark_from": "2029-Apr-13 19:41",
+        "brightest_mag": 2.783,
+        "note": null,
+        "error": null
+      }
+    }
+  },
+  "satellites": {
+    "status": "ok",
+    "rows": [
+      {
+        "norad": 25544,
+        "name": "ISS (ZARYA)",
+        "last_good": "2026-10-23 19:51",
+        "age_h": 0.8133843622222222,
+        "stations": 20,
+        "sample": 25,
+        "state": "LIVE",
+        "stale": false,
+        "next_pass": "10-25 18:10 SGP",
+        "db_status": "in orbit"
+      },
+      {
+        "norad": 39444,
+        "name": "FUNcube-1 (AO-73)",
+        "last_good": "2026-10-23 19:39",
+        "age_h": 1.0125510288888888,
+        "stations": 9,
+        "sample": 25,
+        "state": "LIVE",
+        "stale": false,
+        "next_pass": "10-24 19:20 JF6FYI Nishikazu, ",
+        "db_status": "in orbit"
+      },
+      {
+        "norad": 39161,
+        "name": "ESTCube-1",
+        "last_good": "2026-08-18 11:26",
+        "age_h": 1593.2231065844444,
+        "stations": 17,
+        "sample": 25,
+        "state": "SILENT",
+        "stale": true,
+        "db_status": "in orbit"
+      },
+      {
+        "norad": 40931,
+        "name": "LAPAN-A2 (IO-86)",
+        "last_good": "2026-10-23 20:17",
+        "age_h": 0.3828288066666667,
+        "stations": 5,
+        "sample": 25,
+        "state": "LIVE",
+        "stale": false,
+        "next_pass": "10-25 05:22 PAPUA OBSERVER",
+        "db_status": "in orbit"
+      },
+      {
+        "norad": 40069,
+        "name": "METEOR M-2",
+        "last_good": "2026-10-22 08:52",
+        "age_h": 35.78727325111111,
+        "stations": 11,
+        "sample": 25,
+        "state": "LIVE",
+        "stale": false,
+        "next_pass": "10-23 21:22 Test",
+        "db_status": "in orbit"
+      },
+      {
+        "norad": 7530,
+        "name": "OSCAR 7 (AO-7)",
+        "last_good": "2026-10-23 09:58",
+        "age_h": 10.68643991777778,
+        "stations": 7,
+        "sample": 25,
+        "state": "LIVE",
+        "stale": false,
+        "next_pass": "10-24 21:42 biGS",
+        "db_status": "in orbit"
+      },
+      {
+        "norad": 24278,
+        "name": "JAS-2 (FO-29)",
+        "last_good": "2026-10-23 14:19",
+        "age_h": 6.3431065844444445,
+        "stations": 9,
+        "sample": 25,
+        "state": "LIVE",
+        "stale": false,
+        "next_pass": "10-24 20:16 biGS",
+        "db_status": "in orbit"
+      }
+    ]
+  },
+  "debris": {
+    "status": "ok",
+    "in_orbit": 35070,
+    "active_payloads": 17282,
+    "by_type": {
+      "PAY": 20182,
+      "R/B": 2294,
+      "DEB": 12539,
+      "UNK": 55
+    },
+    "over_the_line": [
+      "1150-1200",
+      "1400-1450",
+      "1450-1500",
+      "1500-1550",
+      "1550-1600"
+    ],
+    "top": [
+      {
+        "shell": "1400-1450",
+        "objects": 459,
+        "index": 1.8231675000270524,
+        "band": "OVER THE LINE"
+      },
+      {
+        "shell": "1450-1500",
+        "objects": 500,
+        "index": 1.53666660334276,
+        "band": "OVER THE LINE"
+      },
+      {
+        "shell": "1550-1600",
+        "objects": 224,
+        "index": 1.3429508278771383,
+        "band": "OVER THE LINE"
+      },
+      {
+        "shell": "1150-1200",
+        "objects": 577,
+        "index": 1.2248586283326985,
+        "band": "OVER THE LINE"
+      },
+      {
+        "shell": "1500-1550",
+        "objects": 271,
+        "index": 1.1808306400941728,
+        "band": "OVER THE LINE"
+      }
+    ]
+  },
+  "prev_stamp": null,
+  "changes": [],
+  "headline": "First report. Apophis EXCLUDED (orbit 220, Lisbon IMPOSSIBLE); satellites 6/7 fresh; 5 debris shells over the line."
+}
