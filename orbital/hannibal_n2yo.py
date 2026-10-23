@@ -116,6 +116,30 @@ def _f(v, default=None):
         return default
 
 
+# Altitude sanity ceiling (km). Real Earth-orbit altitudes top out far below this: the
+# deepest objects we carry are the VELA pair near apogee (~160,000 km), and even the Moon
+# is ~384,400 km away. N2YO sometimes serves a satalt propagated from a degenerate or
+# immature element set -- near-zero mean motion, or eccentricity >= 1 (a parabolic/hyperbolic
+# "escape" solution) -- which sends the derived altitude to absurd values (seen: ~2.4e12 km
+# for a freshly catalogued object). The altitude is reported by N2YO, not computed here, so
+# the guard belongs at ingestion: anything non-finite, negative, or above this ceiling is
+# treated as unusable rather than printed as if it were a real orbit.
+ALT_MAX_KM = 500_000.0
+
+
+def sane_alt_km(alt):
+    """Return (clean_alt_or_None, suspect_bool) for an altitude reported by N2YO.
+
+    suspect is True when the value is missing, non-finite, negative, or above ALT_MAX_KM --
+    i.e. a degenerate element set. A suspect altitude is returned as None so callers do not
+    feed garbage into the elevation/geometry and do not display it as a real number.
+    """
+    a = _f(alt)
+    if a is None or not math.isfinite(a) or a < 0.0 or a > ALT_MAX_KM:
+        return None, True
+    return a, False
+
+
 def _utc(ts):
     try:
         return time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(int(ts)))
@@ -209,8 +233,9 @@ class N2YO:
         if not pos:
             return Result(None, error="N2YO returned no position")
         info = res.data.get("info", {})
+        alt_p, alt_p_suspect = sane_alt_km(pos.get("sataltitude"))
         res.data = {"satid": info.get("satid"), "name": info.get("satname"), "lat": _f(pos.get("satlatitude")),
-                    "lon": _f(pos.get("satlongitude")), "alt_km": _f(pos.get("sataltitude")), "az": _f(pos.get("azimuth")),
+                    "lon": _f(pos.get("satlongitude")), "alt_km": alt_p, "alt_suspect": alt_p_suspect, "az": _f(pos.get("azimuth")),
                     "el": _f(pos.get("elevation")), "time": _utc(pos.get("timestamp")), "up": (_f(pos.get("elevation"), -1) or -1) > 0}
         return res
 
@@ -249,15 +274,21 @@ class N2YO:
         info = res.data.get("info", {})
         rows = []
         for s in res.data.get("above") or []:
-            slat, slon, alt = _f(s.get("satlat")), _f(s.get("satlng")), _f(s.get("satalt"), 0.0)
+            slat, slon = _f(s.get("satlat")), _f(s.get("satlng"))
             if slat is None or slon is None:
                 continue
+            alt, alt_suspect = sane_alt_km(s.get("satalt"))
             dist = ground_distance_km(lat, lon, slat, slon)
+            # Without a trustworthy altitude the geometric elevation is meaningless, so leave
+            # it None (the object is still "above" per N2YO's own server-side filter).
+            el = round(elevation_deg(dist, alt), 1) if alt is not None else None
             rows.append({"norad": int(s.get("satid", 0) or 0), "name": str(s.get("satname") or "UNKNOWN").strip(),
                          "designator": s.get("intDesignator") or "", "launched": s.get("launchDate") or "",
-                         "lat": slat, "lon": slon, "alt_km": alt, "distance_km": round(dist), "el": round(elevation_deg(dist, alt), 1),
+                         "lat": slat, "lon": slon, "alt_km": alt, "alt_suspect": alt_suspect,
+                         "distance_km": round(dist), "el": el,
                          "az": round(bearing_deg(lat, lon, slat, slon)), "dir": compass(bearing_deg(lat, lon, slat, slon))})
-        rows.sort(key=lambda r: -r["el"])
+        # Highest elevation first; suspect rows (no usable altitude -> no elevation) sink to the bottom.
+        rows.sort(key=lambda r: (r["el"] is None, -(r["el"] if r["el"] is not None else 0.0)))
         res.data = {"category": category, "category_name": CATEGORIES.get(category, str(category)),
                     "count": int(_f(info.get("satcount"), len(rows)) or len(rows)), "rows": rows}
         return res

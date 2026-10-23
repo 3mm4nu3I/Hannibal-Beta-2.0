@@ -34,7 +34,7 @@ import hannibal_login
 import hannibal_n2yo
 import run_telemetry as rt
 from hannibal_creds import session_get, session_set
-from hannibal_net import base_dir, default_net, home_location, mask_id, redact_text
+from hannibal_net import HOME_NOT_SET_HELP, base_dir, default_net, home_location, mask_id, redact_text, save_home
 from hannibal_n2yo import CATEGORIES, GLOBALSTAR, MENU_CATEGORIES, MILITARY, N2YO
 from hannibal_nasa import FAMILIES, Nasa
 from hannibal_spacetrack import CREDENTIALS_HELP, SpaceTrack, get_credentials
@@ -197,7 +197,8 @@ def get_above(category=MILITARY, radius=90):
         return {"error": redact_text(exc), "note": "", "rows": [], "count": 0, "category": category,
                 "category_name": CATEGORIES.get(category, str(category))}
     out = _n2yo_dict(res)
-    out.update({"rows": [], "count": 0, "category": category, "category_name": CATEGORIES.get(category, str(category))})
+    out.update({"rows": [], "count": 0, "category": category, "category_name": CATEGORIES.get(category, str(category)),
+                "home": home_location()})
     if res.data:
         out.update(res.data)
     return out
@@ -287,6 +288,13 @@ def _table(headers, rows, widths, color=True, row_codes=None):
     return lines
 
 
+def home_line(home, color=True):
+    """One line naming the observer, or a red warning when no home is set (never compute silently for 0N 0E)."""
+    if not home.get("set", True):
+        return _c("  [!] " + HOME_NOT_SET_HELP, art.RED, color=color)
+    return _c(f"  Observer: {home['name']}  ({home['lat']:+.4f}, {home['lon']:+.4f})", art.GRAY, color=color)
+
+
 def _notice(data, color=True):
     """One line about staleness / errors for a provider result dict."""
     if data.get("error"):
@@ -323,6 +331,8 @@ def sky_lines(data, color=True):
     home = data["home"]
     out = [art.section(f"SKY OVER {home['name'].upper()}  ({home['lat']:.4f}, {home['lon']:.4f})"
                        f"   as of {data['as_of'] or 'n/a'} UT", 89, color)]
+    if not home.get("set", True):
+        out.append(home_line(home, color))
     deg = art.sym("deg")
     scale = ("-90" + deg).ljust(18) + "0" + ("+90" + deg).rjust(18)
     head = f"{'BODY':<8} {'AZ':>7} {'DIR':<3}  {'EL':>7}  {scale} {'MAG':>5}  RANGE"
@@ -585,7 +595,12 @@ def screen_status(ask, out, color):
         + ("" if s.get("fred") else "   -> menu [M], or: python hannibal_fred.py --set-key (or setx FRED_API_KEY)"))
     out(f"  BlueGlobe API key       : {yes if s['blueglobe_key'] else _c('default test key', art.GOLD, color=color)}   (BLUEGLOBE_API_KEY)")
     out(f"  Output masking          : {yes.replace('SET', 'ACTIVE') if s['masking'] else _c('not installed in this process', art.GOLD, color=color)}")
-    out(f"  Home location           : {s['home']['name']} ({s['home']['lat']:.4f}, {s['home']['lon']:.4f})")
+    if s["home"].get("set", True):
+        out(f"  Home location           : {s['home']['name']} ({s['home']['lat']:.4f}, {s['home']['lon']:.4f})"
+            f"   from {s['home'].get('source', 'environment')}")
+    else:
+        out(f"  Home location           : {no}   -> python hannibal_orbital.py --set-home LAT LON NAME"
+            "   (until then everything is computed for 0N 0E)")
     out(f"  Response cache          : {s['cache_entries']} entries in {default_net().cache_dir}")
     out("  JPL services need no key. Space-Track policy: <30 req/min, <300/h, GP 1/h, SATCAT/DECAY 1/day (enforced).")
 
@@ -620,10 +635,12 @@ def screen_gallery(ask, out, color):
         out(_c(f"  {art.sym('star')} {slogan}", art.GOLD, color=color))
 
 
-def _above_table(data, out, color, limit=8, numbered=False):
+def _above_table(data, out, color, limit=8, numbered=False, show_observer=True):
     """Print one N2YO 'above' result. Returns the rows shown."""
     title = f"{data['category_name'].upper()} OVERHEAD NOW  ({data.get('count', 0)} above the horizon)"
     out(art.section(title, 89, color))
+    if show_observer:
+        out(home_line(data.get("home") or home_location(), color))
     n = _notice(data, color)
     n and out(n)
     rows = data.get("rows", [])[:limit]
@@ -631,9 +648,12 @@ def _above_table(data, out, color, limit=8, numbered=False):
         head = ("#   " if numbered else "") + f"{'NORAD':<6} {'NAME':<24} {'EL':>5} {'AZ':>4} {'ALT km':>7} {'GROUND km':>10}  OVER (lat, lon)"
         out(_c("  " + head, art.GOLD, color=color))
         for i, r in enumerate(rows, 1):
+            el_s = f"{r['el']:>5.1f}" if r.get("el") is not None else f"{'?':>5}"
+            alt_s = f"{r['alt_km']:>7,.0f}" if r.get("alt_km") is not None else f"{'?':>7}"
+            flag = "  [suspect TLE: altitude rejected]" if r.get("alt_suspect") else ""
             out(("  " + (f"{i:<3} " if numbered else "") +
-                 f"{r['norad']:<6} {r['name'][:24]:<24} {r['el']:>5.1f} {r['dir']:>4} {r['alt_km']:>7,.0f} {r['distance_km']:>10,}  "
-                 f"{r['lat']:+.1f}, {r['lon']:+.1f}"))
+                 f"{r['norad']:<6} {r['name'][:24]:<24} {el_s} {r['dir']:>4} {alt_s} {r['distance_km']:>10,}  "
+                 f"{r['lat']:+.1f}, {r['lon']:+.1f}" + flag))
         if data.get("count", 0) > len(rows):
             out(_c(f"  ... and {data['count'] - len(rows)} more (use [N] for the full list)", art.GRAY, color=color))
     elif not data.get("error"):
@@ -646,11 +666,12 @@ def screen_home(ask, out, color):
     d = get_overhead()
     home = d["home"]
     out(art.section(f"ON THE SKY OVER {home['name'].upper()} -- N2YO", 89, color))
+    out(home_line(home, color))
     if not d["configured"]:
         out(_c("  [!] no N2YO API key yet -- pick [K] to enter it (free key: n2yo.com > profile > API key).", art.RED, color=color))
         return
     for key in ("military", "globalstar"):
-        _above_table(d[key], out, color)
+        _above_table(d[key], out, color, show_observer=False)
         out("")
 
 
@@ -664,7 +685,8 @@ def _satellite_detail(norad, out, color):
         out(_c("  [~] " + n, art.GOLD, color=color))
     p = d["position"]
     if p:
-        out(f"  NOW      lat {p['lat']:+.2f}  lon {p['lon']:+.2f}  alt {p['alt_km']:,.0f} km   az {p['az']:.0f} {hannibal_n2yo.compass(p['az'])}  "
+        alt_disp = f"{p['alt_km']:,.0f} km" if p.get("alt_km") is not None else "? (suspect TLE)"
+        out(f"  NOW      lat {p['lat']:+.2f}  lon {p['lon']:+.2f}  alt {alt_disp}   az {p['az']:.0f} {hannibal_n2yo.compass(p['az'])}  "
             f"el {p['el']:+.1f}   " + (_c(art.sym("arrow") + " ABOVE YOUR HORIZON", art.GREEN, color=color) if p["up"] else "below the horizon") +
             f"   ({p['time']} UTC)")
     t = d["tle"]
@@ -816,6 +838,75 @@ def screen_logins(ask, out, color):
     reset_clients()
 
 
+def screen_eme(ask, out, color):
+    """Earth-Moon-Earth (moonbounce) link budget: can your station hear its own echo off the Moon?"""
+    import hannibal_eme as eme
+    d = eme.station_defaults()
+    out(art.section("EARTH-MOON-EARTH (MOONBOUNCE) LINK BUDGET", 89, color))
+    out(_c("  The Moon is a passive reflector: transmit on a band you are licensed for, hear your echo ~2.5 s later.",
+           art.GRAY, color=color))
+    bands = "/".join(eme.BANDS)
+    band = ask(f"  Band [{bands}] ({d['band']}): ", d["band"]).strip().lower()
+    f_hz = eme.BANDS.get(band, d["f_hz"])
+    try:
+        dish = float(ask(f"  Dish diameter in metres ({d['dish_m']:.1f}): ", "") or d["dish_m"])
+        pt = float(ask(f"  Transmit power in watts ({d['pt_w']:.0f}): ", "") or d["pt_w"])
+        tsys = float(ask(f"  System noise temperature in kelvin ({d['t_sys_k']:.0f}): ", "") or d["t_sys_k"])
+    except ValueError:
+        out(_c("  [!] numbers only, please. Using defaults.", art.GOLD, color=color))
+        dish, pt, tsys = d["dish_m"], d["pt_w"], d["t_sys_k"]
+
+    moon = eme.current_moon()
+    if moon.get("error"):
+        out(_c("  [!] could not read the Moon from Horizons: " + str(moon["error"]), art.RED, color=color))
+        return
+    home = moon.get("home") or home_location()
+    out(home_line(home, color))
+    if not home.get("set", True):
+        out(_c("  (set your home first with --set-home, or the Moon track is for 0N 0E)", art.GOLD, color=color))
+
+    b = eme.link_budget(f_hz, moon["range_km"], moon["range_rate_kms"] or 0.0, pt_w=pt, dish_m=dish,
+                        efficiency=d["efficiency"], t_sys_k=tsys, bw_hz=d["bw_hz"], integ_s=d["integ_s"],
+                        l_misc_db=d["l_misc_db"])
+    up = (moon["el"] or -99) > 0
+    out("")
+    out(_c(f"  MOON NOW   az {moon['az']:.0f} {hannibal_n2yo.compass(moon['az'])}  el {moon['el']:+.1f} deg   "
+           + (_c(art.sym('arrow') + ' up -- workable', art.GREEN, color=color) if up
+              else _c('below the horizon -- wait for moonrise', art.GOLD, color=color))
+           + f"   ({moon['as_of']} UT)", art.WHITE, color=color))
+    out(f"  Range {moon['range_km']:,.0f} km   round trip {b['round_trip_s']:.2f} s   "
+        f"range-rate {moon['range_rate_kms']:+.3f} km/s")
+    out("")
+    out(_c(f"  BAND {band} ({f_hz/1e6:.1f} MHz)   dish {dish:.1f} m @ {d['efficiency']:.0%}   "
+           f"Tx {pt:.0f} W   Tsys {tsys:.0f} K", art.GOLD, color=color))
+    out(f"    Tx power            {b['pt_dbm']:+7.1f} dBm")
+    out(f"    Dish gain (x2)      {b['g_tx_dbi']:+7.1f} dBi each")
+    out(f"    Path loss           {-b['l_path_db']:+7.1f} dB")
+    out(f"    Misc loss           {-b['l_misc_db']:+7.1f} dB   (feedline, Faraday/pol, pointing, atmosphere)")
+    out(f"    = Echo received     {b['pr_dbm']:+7.1f} dBm")
+    out(f"    Noise floor (2.5kHz){b['n_bw_dbm']:+7.1f} dBm   (Tsys {tsys:.0f} K)")
+    out(f"    Two-way Doppler     {b['doppler_hz']:+7.0f} Hz   (tune your SDR here; <0 = echo lower)")
+    out(f"    Echo depth spread   {b['echo_depth_ms']:7.1f} ms   (caps coherent bandwidth -> narrow modes)")
+    out(f"    Processing gain     {b['proc_gain_db']:+7.1f} dB    (B x tau = {b['bw_hz']:.0f} Hz x {b['integ_s']:.0f} s)")
+    out("")
+    snr = b["snr_ref_db"]
+    tag = art.GREEN if b["best_mode"] else art.RED
+    out(_c(f"  SNR in 2500 Hz reference: {snr:+.1f} dB", tag, color=color))
+    for name, thr in eme.MODE_THRESHOLDS:
+        mark = art.sym("arrow") + " " if snr >= thr else "   "
+        col = art.GREEN if snr >= thr else art.GRAY
+        out(_c(f"    {mark}{name:<16} needs >= {thr:+5.1f} dB", col, color=color))
+    out("")
+    if b["best_mode"]:
+        out(_c(f"  VERDICT: echo detectable -- best mode {b['best_mode']}.", art.GREEN, color=color))
+    else:
+        need = eme.MODE_THRESHOLDS[0][1] - snr
+        out(_c(f"  VERDICT: echo is {need:.1f} dB below even Q65. Bigger dish, more power, lower Tsys, or go up a band.",
+               art.GOLD, color=color))
+    out(_c("  Transmit only on bands and under a licence you hold. Figures are a model, not a guarantee.",
+           art.GRAY, color=color))
+
+
 MENU = [
     ("1", "Fleet telemetry        SatNOGS link health of your satellites", screen_fleet),
     ("2", "Re-entry watch         Space-Track DECAY + TIP predictions", screen_reentry),
@@ -824,6 +915,7 @@ MENU = [
     ("H", "Home window           Military + Globalstar satellites overhead now (N2YO)", screen_home),
     ("N", "N2YO satellites       look at any satellite: position, TLE, visual/radio passes", screen_n2yo),
     ("5", "Sky tonight            Sun, Moon & planets over your home (JPL Horizons)", screen_sky),
+    ("E", "Moonbounce (EME)       can you hear your own echo off the Moon? live link budget", screen_eme),
     ("6", "Ephemeris lookup       any planet, moon, asteroid or comet (Horizons)", screen_ephemeris),
     ("7", "Asteroid moons         browse every body with moons (JPL sb_sat)", screen_asteroid_moons),
     ("8", "Radar astrometry       JPL small-body radar delay/Doppler data", screen_radar),
@@ -1129,13 +1221,33 @@ def main(argv=None):
                            ("--decay", "re-entry watch (Space-Track)"), ("--conjunctions", "close approaches (Space-Track)"),
                            ("--boxscore", "catalogue box score (Space-Track)"), ("--kessler", "debris cascade watch (CelesTrak catalog)"), ("--zombie", "which of the 17 Oct military list still transmit (SatNOGS)"), ("--status", "credentials / masking / cache"),
                            ("--home", "Military + Globalstar overhead now (N2YO)"), ("--moons", "browse asteroid/comet/TNO satellites (JPL sb_sat)"),
-                           ("--dashboard", "open the BlueGlobe dashboard"), ("--art", "Soviet space art gallery"), ("--feeder", "ADS-B feeder (asks for confirmation)")):
+                           ("--dashboard", "open the BlueGlobe dashboard"), ("--art", "Soviet space art gallery"), ("--feeder", "ADS-B feeder (asks for confirmation)"),
+                           ("--eme", "Earth-Moon-Earth moonbounce link budget (Horizons; no key)")):
         ap.add_argument(flag, action="store_true", help=helptext)
     ap.add_argument("--no-anim", action="store_true", help="skip the boot animation")
     ap.add_argument("--sat", metavar="NORAD", type=int, help="N2YO detail for one satellite (position, TLE, passes)")
     ap.add_argument("--neo", metavar="DES", help="where it won't be: impact exclusion for one asteroid/comet (JPL)")
     ap.add_argument("--no-login", action="store_true", help="do not ask for the Space-Track login / N2YO key")
+    ap.add_argument("--set-home", nargs="+", metavar="LAT_LON_NAME",
+                    help="save your observer location to ~/.hannibal/home.json, e.g. --set-home 48.8566 2.3522 Paris "
+                         "(decimal degrees, north/east positive)")
     args = ap.parse_args(argv)
+
+    if args.set_home:
+        if len(args.set_home) < 2:
+            ap.error("--set-home needs LAT LON [NAME]")
+        try:
+            path = save_home(args.set_home[0], args.set_home[1], " ".join(args.set_home[2:]) or "Home Station")
+        except (ValueError, OSError) as exc:
+            print(f"  [!] home not saved: {exc}")
+            return 2
+        h = home_location()
+        print(f"  Home saved to {path}: {h['name']} ({h['lat']:+.4f}, {h['lon']:+.4f})")
+        if h.get("source") == "environment":
+            print("  [~] note: HANNIBAL_HOME_LAT / _LON are set in your environment and take precedence over this file.")
+        if not any(getattr(args, n) for n in ("scan", "sky", "home", "moons", "decay", "conjunctions", "boxscore",
+                                               "art", "status", "dashboard", "feeder", "eme")) and args.sat is None:
+            return 0
 
     color = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
     ask = lambda prompt, default="": (input(prompt).strip() or default)
@@ -1144,6 +1256,7 @@ def main(argv=None):
                  ("decay", lambda: screen_reentry(ask, print, color)), ("conjunctions", lambda: screen_conjunctions(ask, print, color)),
                  ("boxscore", lambda: screen_boxscore(ask, print, color)), ("kessler", lambda: hannibal_kessler and hannibal_kessler.screen_kessler(ask, print, color)), ("art", lambda: screen_gallery(ask, print, color)), ("status", lambda: screen_status(ask, print, color)),
                  ("dashboard", lambda: print(sat_launch_dashboard()) or time.sleep(0.2)),
+                 ("eme", lambda: screen_eme(ask, print, color)),
                  ("feeder", lambda: screen_feeder(ask, print, color))]
     ran = False
     one_shots.append(("sat", lambda: _satellite_detail(args.sat, print, color)))

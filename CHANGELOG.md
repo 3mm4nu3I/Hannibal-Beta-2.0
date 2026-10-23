@@ -3,6 +3,11 @@
 Newest first. Each entry says what changed, why, and what was and was not verified.
 Per-module detail lives next to the module (e.g. orbital/CHANGELOG_telemetry.md).
 
+## 2026-10-23 — Sync: the laptop's work merged into main
+- `feature/eme-moonbounce` (16-17 Oct: home-location fix, `[E]` Moonbounce, N2YO altitude guard) merged into main. It matches the laptop's running copy exactly, so main now holds everything: the laptop's work plus `[W]`, `[D]` and `[Z]`.
+- One conflict (orbital/CHANGELOG.md), both sides kept. All tests pass; `[Z]`, `[W]`, `[E]` checked through the merged menu. Backup of main: branch `backup/main-2026-10-23-pre-sync`.
+- Full detail: orbital/CHANGELOG.md
+
 ## 2026-10-23 — Receive-only and the law
 - `orbital/README.md` has a new section on Belgian rules for receive-only listening, from the Orbital Directorate's 22 Oct memo: no licence to listen, licences only to transmit, ONL listener number voluntary, and BIPT's limit on what may be listened to (open frequencies only; no military traffic). Documentation only.
 - Full detail: orbital/CHANGELOG.md

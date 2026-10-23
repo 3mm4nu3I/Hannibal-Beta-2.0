@@ -23,6 +23,7 @@
 | Key | What | Who |
 |---|---|---|
 | `HANNIBAL_NORMAL.bat` / `HANNIBAL_LOW_INTERNET.bat` | start with the normal or the bad-connection network profile | everyone |
+| `[E]` Moonbounce (new 2026-10-16) | EME link budget: can your station hear its own echo off the Moon? Moon range from JPL Horizons. Transmitting needs a licence. `python hannibal_orbital.py --eme` | everyone |
 | `[Z]` Zombie check (new 2026-10-22) | which satellites on a list still transmit something an amateur station can hear: SatNOGS transmitters on record + vetted observations in the last 30 days, and whether any has an uplink. Default: the 148 military objects from the 17 Oct export. No key. `python hannibal_zombie.py` | everyone |
 | `[W]` Where it won't be (new 2026-10-22) | Earth-impact exclusion for any asteroid or comet from NASA/JPL: every close approach to 2200, nearest edge of the uncertainty window vs the atmosphere, verdict defers to JPL Sentry. No key. `python hannibal_neo.py 99942` | everyone |
 | `[D]` Debris cascade (new 2026-10-22) | Kessler watch from the public CelesTrak catalog: objects per 50 km shell, drag cleanup time, cascade index, and how far the assumptions must move before each shell crosses the line. No key. `python hannibal_kessler.py` | everyone |
@@ -42,6 +43,17 @@ call through the same masking layer you already use.
 python hannibal_orbital.py          # interactive menu (standalone)
 python patch_hannibal.py            # wire the keys below into hannibal_terminal.py
 ```
+
+## First run: set your home
+
+Everything "above you" is computed for your home location. Set it once:
+
+```
+python hannibal_orbital.py --set-home LAT LON NAME      # decimal degrees, north/east positive
+```
+
+It is saved in `~/.hannibal/home.json` (your user folder, not this one). Until it is set, the overhead and sky
+screens show a red `NO HOME SET` line and compute for 0N 0E.
 
 ## Where do I type my passwords?
 
@@ -88,6 +100,7 @@ box-score screens. Soviet space art lives in `hannibal_art.py` (menu `[A]`, or `
 
 * `[L]` fleet link health (press again to force a rescan)
 * `[B]` open the 3D BlueGlobe dashboard
+* `[E]` **Moonbounce (EME)** -- can your station hear its own echo off the Moon? Live link budget (dish, power, band) using the Moon's current range/range-rate from Horizons; also `python hannibal_orbital.py --eme`. Set the station with `HANNIBAL_EME_BAND/_DISH_M/_PT_W/_TSYS_K`.
 * `[V]` Orbital Ops page; press `[V]` again to open the menu (asks for your logins once, then shows Military + Globalstar overhead)
 
 ## The Orbital Ops menu
@@ -254,7 +267,9 @@ its free-tier daily limit, and each IP is cached for 7 days since geography for 
 SPACETRACK_USER / SPACETRACK_PASS      preferred over what you type and over norad_targets.json
 N2YO_API_KEY                           your N2YO REST key (same precedence)
 BLUEGLOBE_API_KEY                      your BlueGlobe key (your origin must be whitelisted)
-HANNIBAL_HOME_LAT / _LON / _ALT_KM / _NAME     your sky location (no default location in source: set these, or sky features compute from 0, 0)
+HANNIBAL_HOME_LAT / _LON / _ALT_KM / _NAME     your sky location; or save it once with
+                                       python hannibal_orbital.py --set-home LAT LON NAME  (-> ~/.hannibal/home.json).
+                                       No location in source. Unset, every 'overhead' screen says NO HOME SET (0N 0E).
 HANNIBAL_ADSB_SOURCE / HANNIBAL_FEEDER_ID      feeder source URL / feeder id
 HANNIBAL_ASCII_ONLY=1                  pure ASCII art for consoles without block glyphs
 HANNIBAL_NO_MASK=1  HANNIBAL_NO_ANIM=1
