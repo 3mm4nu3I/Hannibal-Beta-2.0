@@ -31,6 +31,15 @@ The sealed statement should say what we expect the data to show, and by when. Th
 
 Raw replies, hashes and the analysis for each run are kept in `evidence/<UTC stamp>/` (see `SHA256SUMS` and `manifest.json` there).
 
+### Worst-case rule (added 23 Oct 2026, 21:45 UTC, at the investigators' request)
+
+Every judgement uses the worst case the data allows:
+- **Distances:** the nearest 3-sigma edge, never the nominal.
+- **Consequences:** the upper end of Apophis's size and density, 370 m and 3.5 g/cm³, at its 12.6 km/s impact speed (Earth's gravity included). That gives about 1,600 Mt, roughly 32 Tsar Bombas. Heat, blast and tsunami are shares of this energy, not additions to it.
+- **Detection:** the conservative telescope model.
+
+The worst case sets how bad an impact would be. Whether an impact can happen is still decided only by the data and criteria C1 to C8.
+
 ## 4. What counts as real reason for concern (fixed now, in advance)
 
 Any one of these, from professional data, counts. Each one is checked automatically on every run of the daily brief (C6 to C8 for hypothesis H-A are in 4b):
