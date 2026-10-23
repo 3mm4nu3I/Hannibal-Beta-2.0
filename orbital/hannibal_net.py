@@ -49,7 +49,9 @@ HOST_LIMITS = {
     "api.satellitemap.space": {"min_interval": 2.0},   # feed docs: accepts updates every >=2 s
     "api.n2yo.com": {"min_interval": 0.5, "per_hour": 900},  # docs: 1000/h (tle, positions), 100/h (passes, above)
     "ipapi.co": {"min_interval": 1.0, "per_hour": 500},
-    "api.stlouisfed.org": {"min_interval": 0.6, "per_minute": 100},   # FRED: 120 requests/minute per key       # free tier: keep well under the documented 1000/day
+    "api.stlouisfed.org": {"min_interval": 0.6, "per_minute": 100},
+    "www.navcen.uscg.gov": {"min_interval": 2.0},      # GPS operational advisory (cached 30 min)
+    "www.gsc-europa.eu": {"min_interval": 2.0},        # Galileo constellation page (cached 30 min)   # FRED: 120 requests/minute per key       # free tier: keep well under the documented 1000/day
 }
 
 
