@@ -141,6 +141,31 @@ Limits worth keeping in mind: SatNOGS only knows what amateurs have found, so "n
 death (military links on bands amateurs don't monitor never show up); "heard" is evidence of a working
 transmitter, not of a link anyone can command. Everything here is receive-only.
 
+## Receive-only and the law (Belgium)
+
+From the Orbital Directorate's regulatory memo of 22 Oct 2026, checked against BIPT's own pages the same day.
+Not legal advice; BIPT is the authority.
+
+* **No licence to listen.** Owning and using a receiver (an SDR, a scanner, a satellite antenna) needs no
+  permit, exam or licence in Belgium. BIPT states that buying and owning a scanner or receiver is allowed.
+* **Licences are for transmitting.** BIPT operator certificates (ON3 and up) and station authorisations are
+  needed only to transmit. Nothing in Hannibal transmits.
+* **The ONL listener number is voluntary.** It comes through the UBA (the Belgian amateur radio union) as a
+  club matter, not a state requirement. Check the current price and terms on uba.be.
+* **What you may listen to is limited.** BIPT allows listening only to frequencies that are open to everyone,
+  or ones the frequency holder has given you permission for. In practice:
+  * fine: ERS 15's carrier, amateur satellites, weather satellites (NOAA, Meteor), the ISS -- what SatNOGS
+    stations receive openly every day;
+  * not fine: deliberately listening in on or decoding military satellite traffic, or anything else not
+    meant for the public;
+  * banned outright: TETRA detectors and speed-radar detectors, even though they are receivers too.
+
+`[Z]` stays on the right side of this line: it reads public SatNOGS records and never decodes anything itself.
+
+Sources: [BIPT: forbidden and/or special equipment](https://www.bipt.be/consumers/radio-frequencies/market-monitoring/forbidden-and-or-special-equipment),
+[BIPT: radio amateurs](https://www.bipt.be/consumers/radio-frequencies/private-use-hobby/radioamateurs),
+[BIPT: general authorisations](https://www.bipt.be/operators/general-authorisations-for-the-use-of-the-radio-spectrum).
+
 ## [I] Breach log -- IP geolocation + phone metadata, for incident write-ups
 
 What it's for: when something probes or breaches your stuff, you need a record of what happened and enough to start an

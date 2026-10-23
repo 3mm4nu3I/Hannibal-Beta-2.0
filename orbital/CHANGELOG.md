@@ -3,6 +3,17 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-23] Receive-only and the law (README)
+
+### Added
+- `README.md`: a "Receive-only and the law (Belgium)" section from the Orbital Directorate's regulatory memo of 22 Oct 2026: no licence needed to own or use a receiver; licences (ON3 and up) only for transmitting; the UBA ONL listener number is voluntary. Plus the one rule the memo left out: BIPT allows listening only to frequencies open to everyone or ones the frequency holder has authorised, so military satellite traffic stays off limits and TETRA / speed-radar detectors are banned outright.
+
+### Verified
+- Against BIPT's consumer pages on 22 Oct 2026 (linked in the section). The UBA ONL price and terms were not confirmed; the section says to check uba.be.
+
+### Not done / limits
+- Not legal advice. Documentation only; no code changed.
+
 ## [2026-10-22, evening] Zombie check (`[Z]`)
 
 ### Why

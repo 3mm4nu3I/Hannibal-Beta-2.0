@@ -3,6 +3,10 @@
 Newest first. Each entry says what changed, why, and what was and was not verified.
 Per-module detail lives next to the module (e.g. orbital/CHANGELOG_telemetry.md).
 
+## 2026-10-23 — Receive-only and the law
+- `orbital/README.md` has a new section on Belgian rules for receive-only listening, from the Orbital Directorate's 22 Oct memo: no licence to listen, licences only to transmit, ONL listener number voluntary, and BIPT's limit on what may be listened to (open frequencies only; no military traffic). Documentation only.
+- Full detail: orbital/CHANGELOG.md
+
 ## 2026-10-22 (evening) — Zombie check (`[Z]`)
 - New `[Z] Zombie check` (`orbital/hannibal_zombie.py`, `--zombie`): for a list of satellites, which ones still transmit something an amateur station can hear, from the SatNOGS DB (transmitters on record) and Network (vetted observations in the last 30 days). Default list: the 148 military objects in the 17 Oct Antwerp export. Receive-only, no key.
 - Result, live 22 Oct 2026: **2 of 148 heard** (COSMOS 2488 on UHF FM; ERS 15, launched 1966, on a 136.439 MHz CW carrier), **0 with an uplink on record**. 142 have no transmitter known to the amateur network.
