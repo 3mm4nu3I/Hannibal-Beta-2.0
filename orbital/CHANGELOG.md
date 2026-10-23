@@ -3,6 +3,35 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-23, later] Moonbounce: choose dish or Yagi, band-aware noise
+
+### Why
+Three weaknesses in `[E]`: every band assumed the same 100 K system noise (fair on 23 cm, far too optimistic on 2 m and 6 m, where the galactic sky dominates); the screen printed a +51.8 dB "processing gain" that reads like part of the budget but is not; and the only antenna was a dish, which nobody uses for EME on 6 m or 2 m.
+
+### Added
+- **Antenna choice on any band** (`hannibal_eme.py`, `[E]`): a dish of a chosen kind (`prime-focus` 55% efficiency / 20 K ground pickup, `offset` 65% / 10 K, `mesh` 45% / 25 K; typical values) and diameter, or an array of N Yagis (gain of one Yagi; +10·log10(N), less 0.5 dB phasing loss when N > 1). Defaults: 4 Yagis on 6 m (12 dBi each), 2 m (15 dBi) and 70 cm (18 dBi); a 3 m prime-focus dish on 23 cm and up. The beamwidth is printed next to the gain.
+- **System noise worked out per band and antenna**: receiver 40 K + sky (2.7 K + 200 K × (f / 144 MHz)^-2.55, the galactic background away from the Milky Way's plane) + the Moon's own 210 K glow times the share of the beam it fills + ground pickup. Enter at the Tsys prompt takes it; a typed number or `HANNIBAL_EME_TSYS_K` still sets a fixed total. The breakdown is printed next to the noise floor.
+- New settings: `HANNIBAL_EME_ANTENNA`, `_DISH_KIND`, `_YAGI_DBI`, `_YAGI_N`, `_TRX_K`, `_TGROUND_K`, `_SKY144_K`.
+- 8 new tests in `test_hannibal_eme.py` (14 in all), including the `[E]` screen driven with the Moon stubbed out.
+
+### Changed
+- The processing-gain line is labelled "theoretical ceiling only, NOT added to the SNR", with the reason. It never was in the SNR; now the screen says so.
+- "Dish gain" is now "Antenna gain"; a dish chosen on 6 m / 2 m / 70 cm gets a one-line note that EME stations there normally use Yagi arrays. An unknown band falls back to the default band with a warning instead of a mismatched label.
+- `station_defaults()["t_sys_k"]` is `None` unless `HANNIBAL_EME_TSYS_K` is set (auto noise); `["efficiency"]` is `None` unless `HANNIBAL_EME_EFF` is set (the dish kind decides).
+
+### Kept working
+- A bare number at the antenna prompt still means a prime-focus dish of that diameter, so `RUN_EME.bat`'s piped answers (`23cm`, `3`, `300`, `100`) give exactly the same result as before. Tested.
+
+### Verified
+- All 14 EME tests and the other orbital tests pass; root fixtures pass.
+- Live over Antwerp, 23 Oct 16:20 UT (Moon up, el +9°, 379,310 km): `RUN_EME.bat`'s answers → 3 m dish, Tsys 100 K set, SNR −16.4 dB, Q65; 2 m, 4 × 15 dBi Yagis, 300 W, auto Tsys 273 K (receiver 40 + sky 202 + Moon 0 + ground 30) → SNR −19.8 dB, Q65.
+- The noise fix in numbers: that 2 m array looked 4.3 dB better with the old fixed 100 K. On 23 cm the auto figure (65 K) is lower than the old 100 K, so a typed 100 K is the more cautious choice there.
+
+### Not done / limits
+- Sky noise assumes the Moon is away from the Milky Way's plane; near it the 2 m figure can be three times higher (`HANNIBAL_EME_SKY144_K`). Not computed from the Moon's position yet.
+- No libration spreading of the echo (matters on 3 cm and up), no Faraday rotation model on 2 m (inside the 4 dB misc loss), no ground gain for Yagis at low elevation.
+- Yagi gains, dish efficiencies and ground pickup are typical values, not measurements of any real antenna.
+
 ## [2026-10-23] Sync: the laptop's work merged into main
 
 ### Why

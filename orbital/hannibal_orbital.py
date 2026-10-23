@@ -847,14 +847,52 @@ def screen_eme(ask, out, color):
            art.GRAY, color=color))
     bands = "/".join(eme.BANDS)
     band = ask(f"  Band [{bands}] ({d['band']}): ", d["band"]).strip().lower()
-    f_hz = eme.BANDS.get(band, d["f_hz"])
+    if band not in eme.BANDS:
+        out(_c(f"  [!] unknown band '{band}', using {d['band']}.", art.GOLD, color=color))
+        band = d["band"]
+    f_hz = d["f_hz"] if band == d["band"] else eme.BANDS[band]
+    a = eme.antenna_defaults(band)
+
+    def noise(antenna, gain):
+        return eme.system_temp_k(f_hz, antenna, gain, t_rx_k=d["t_rx_k"], t_ground_k=d["t_ground_k"],
+                                 cold_sky_144_k=d["sky_144_k"])
+
     try:
-        dish = float(ask(f"  Dish diameter in metres ({d['dish_m']:.1f}): ", "") or d["dish_m"])
+        # A bare number here still means a dish of that diameter, so RUN_EME.bat's piped answers keep working.
+        typ, diameter = eme.parse_antenna_answer(
+            ask(f"  Antenna: [D]ish or [Y]agi array, or a dish diameter in metres ({a['type']}): ", a["type"]),
+            a["type"])
+        if typ == "dish":
+            kind = a["dish_kind"]
+            if diameter is None:
+                kind = ask(f"  Dish kind [{'/'.join(eme.DISH_KINDS)}] ({kind}): ", kind).strip().lower()
+                if kind not in eme.DISH_KINDS:
+                    out(_c(f"  [!] unknown dish kind, using {a['dish_kind']}.", art.GOLD, color=color))
+                    kind = a["dish_kind"]
+                diameter = float(ask(f"  Dish diameter in metres ({a['dish_m']:.1f}): ", "") or a["dish_m"])
+            antenna = {"type": "dish", "kind": kind, "diameter_m": diameter, "efficiency": a["efficiency"]}
+        else:
+            g1 = float(ask(f"  Gain of one Yagi in dBi ({a['yagi_dbi']:.1f}): ", "") or a["yagi_dbi"])
+            n = int(float(ask(f"  Number of Yagis in the array ({a['yagi_n']}): ", "") or a["yagi_n"]))
+            antenna = {"type": "yagi", "gain_dbi": g1, "count": max(1, n)}
         pt = float(ask(f"  Transmit power in watts ({d['pt_w']:.0f}): ", "") or d["pt_w"])
-        tsys = float(ask(f"  System noise temperature in kelvin ({d['t_sys_k']:.0f}): ", "") or d["t_sys_k"])
+        gain = eme.antenna_gain_dbi(antenna, f_hz)
+        auto_t, parts = noise(antenna, gain)
+        preset = d["t_sys_k"]
+        shown = f"{preset:.0f} K, from HANNIBAL_EME_TSYS_K" if preset else f"auto: {auto_t:.0f} K for this band and antenna"
+        typed = ask(f"  System noise temperature in kelvin (Enter = {shown}): ", "").strip()
+        tsys = float(typed) if typed else (preset or auto_t)
+        if tsys <= 0 or pt <= 0 or (antenna["type"] == "dish" and antenna["diameter_m"] <= 0):
+            raise ValueError("must be positive")
     except ValueError:
-        out(_c("  [!] numbers only, please. Using defaults.", art.GOLD, color=color))
-        dish, pt, tsys = d["dish_m"], d["pt_w"], d["t_sys_k"]
+        out(_c("  [!] numbers only, please. Using the defaults for this band.", art.GOLD, color=color))
+        antenna = eme.default_antenna(band)
+        pt = d["pt_w"]
+        gain = eme.antenna_gain_dbi(antenna, f_hz)
+        auto_t, parts = noise(antenna, gain)
+        typed = ""
+        tsys = d["t_sys_k"] or auto_t
+    tsys_note = ("auto = " + " + ".join(f"{k} {v:.0f}" for k, v in parts.items())) if tsys == auto_t else "set by you"
 
     moon = eme.current_moon()
     if moon.get("error"):
@@ -865,9 +903,9 @@ def screen_eme(ask, out, color):
     if not home.get("set", True):
         out(_c("  (set your home first with --set-home, or the Moon track is for 0N 0E)", art.GOLD, color=color))
 
-    b = eme.link_budget(f_hz, moon["range_km"], moon["range_rate_kms"] or 0.0, pt_w=pt, dish_m=dish,
-                        efficiency=d["efficiency"], t_sys_k=tsys, bw_hz=d["bw_hz"], integ_s=d["integ_s"],
-                        l_misc_db=d["l_misc_db"])
+    b = eme.link_budget(f_hz, moon["range_km"], moon["range_rate_kms"] or 0.0, pt_w=pt,
+                        dish_m=antenna.get("diameter_m", 1.0), g_tx_dbi=gain, g_rx_dbi=gain,
+                        t_sys_k=tsys, bw_hz=d["bw_hz"], integ_s=d["integ_s"], l_misc_db=d["l_misc_db"])
     up = (moon["el"] or -99) > 0
     out("")
     out(_c(f"  MOON NOW   az {moon['az']:.0f} {hannibal_n2yo.compass(moon['az'])}  el {moon['el']:+.1f} deg   "
@@ -877,17 +915,24 @@ def screen_eme(ask, out, color):
     out(f"  Range {moon['range_km']:,.0f} km   round trip {b['round_trip_s']:.2f} s   "
         f"range-rate {moon['range_rate_kms']:+.3f} km/s")
     out("")
-    out(_c(f"  BAND {band} ({f_hz/1e6:.1f} MHz)   dish {dish:.1f} m @ {d['efficiency']:.0%}   "
+    out(_c(f"  BAND {band} ({f_hz/1e6:.1f} MHz)   {eme.describe_antenna(antenna)}   "
            f"Tx {pt:.0f} W   Tsys {tsys:.0f} K", art.GOLD, color=color))
+    if antenna["type"] == "dish" and band in eme.YAGI_BANDS:
+        out(_c(f"  (most {band} EME stations use Yagi arrays rather than a dish)",
+               art.GRAY, color=color))
     out(f"    Tx power            {b['pt_dbm']:+7.1f} dBm")
-    out(f"    Dish gain (x2)      {b['g_tx_dbi']:+7.1f} dBi each")
+    out(f"    Antenna gain (x2)   {b['g_tx_dbi']:+7.1f} dBi each   (beam {eme.beamwidth_deg(gain):.1f} deg wide)")
     out(f"    Path loss           {-b['l_path_db']:+7.1f} dB")
     out(f"    Misc loss           {-b['l_misc_db']:+7.1f} dB   (feedline, Faraday/pol, pointing, atmosphere)")
     out(f"    = Echo received     {b['pr_dbm']:+7.1f} dBm")
-    out(f"    Noise floor (2.5kHz){b['n_bw_dbm']:+7.1f} dBm   (Tsys {tsys:.0f} K)")
+    out(f"    Noise floor (2.5kHz){b['n_bw_dbm']:+7.1f} dBm   (Tsys {tsys:.0f} K, {tsys_note})")
     out(f"    Two-way Doppler     {b['doppler_hz']:+7.0f} Hz   (tune your SDR here; <0 = echo lower)")
     out(f"    Echo depth spread   {b['echo_depth_ms']:7.1f} ms   (caps coherent bandwidth -> narrow modes)")
-    out(f"    Processing gain     {b['proc_gain_db']:+7.1f} dB    (B x tau = {b['bw_hz']:.0f} Hz x {b['integ_s']:.0f} s)")
+    out(_c(f"    Processing gain     {b['proc_gain_db']:+7.1f} dB    theoretical ceiling only, NOT added to the SNR:",
+           art.GRAY, color=color))
+    out(_c("                                     the mode thresholds below already include the decoder's averaging,",
+           art.GRAY, color=color))
+    out(_c("                                     and echo fading keeps the real gain far lower", art.GRAY, color=color))
     out("")
     snr = b["snr_ref_db"]
     tag = art.GREEN if b["best_mode"] else art.RED
@@ -901,7 +946,7 @@ def screen_eme(ask, out, color):
         out(_c(f"  VERDICT: echo detectable -- best mode {b['best_mode']}.", art.GREEN, color=color))
     else:
         need = eme.MODE_THRESHOLDS[0][1] - snr
-        out(_c(f"  VERDICT: echo is {need:.1f} dB below even Q65. Bigger dish, more power, lower Tsys, or go up a band.",
+        out(_c(f"  VERDICT: echo is {need:.1f} dB below even Q65. Bigger antenna, more power, lower Tsys, or go up a band.",
                art.GOLD, color=color))
     out(_c("  Transmit only on bands and under a licence you hold. Figures are a model, not a guarantee.",
            art.GRAY, color=color))
