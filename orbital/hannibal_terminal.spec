@@ -86,6 +86,9 @@ datas += [('hannibal_brain.html', '.')]
 hidden_imports += ['hannibal_fred', 'hannibal_brain', 'hannibal_geoint']
 # Grand Unified Happiness Theorem (menu [T]) -- added 2026-10-11.
 hidden_imports += ['hannibal_theorem']
+# Zombie check (menu [Z]) and its default target list -- added 2026-10-22.
+hidden_imports += ['hannibal_zombie']
+datas += [('zombie_targets_2026-10-17.json', '.')]
 
 a = Analysis(
     ['hannibal_terminal.py'],

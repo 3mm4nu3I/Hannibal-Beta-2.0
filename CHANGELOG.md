@@ -3,6 +3,17 @@
 Newest first. Each entry says what changed, why, and what was and was not verified.
 Per-module detail lives next to the module (e.g. orbital/CHANGELOG_telemetry.md).
 
+## 2026-10-23 — Receive-only and the law
+- `orbital/README.md` has a new section on Belgian rules for receive-only listening, from the Orbital Directorate's 22 Oct memo: no licence to listen, licences only to transmit, ONL listener number voluntary, and BIPT's limit on what may be listened to (open frequencies only; no military traffic). Documentation only.
+- Full detail: orbital/CHANGELOG.md
+
+## 2026-10-22 (evening) — Zombie check (`[Z]`)
+- New `[Z] Zombie check` (`orbital/hannibal_zombie.py`, `--zombie`): for a list of satellites, which ones still transmit something an amateur station can hear, from the SatNOGS DB (transmitters on record) and Network (vetted observations in the last 30 days). Default list: the 148 military objects in the 17 Oct Antwerp export. Receive-only, no key.
+- Result, live 22 Oct 2026: **2 of 148 heard** (COSMOS 2488 on UHF FM; ERS 15, launched 1966, on a 136.439 MHz CW carrier), **0 with an uplink on record**. 142 have no transmitter known to the amateur network.
+- ERS 15 added to the fleet watch list (`orbital/norad_targets.json`), so every fleet telemetry scan now checks it. First scan: UNVETTED (one observation awaiting vetting); 30 days: 2 good of 7 vetted, LOW SAMPLE.
+- Tests: `orbital/test_hannibal_zombie.py` passes offline; every other orbital test and the root fixtures still pass.
+- Full detail and limits: orbital/CHANGELOG.md
+
 ## 2026-10-22 — Where it won't be (`[W]`), Kessler sensitivity, and the day's merges
 - Backups before this work: branch `backup/main-2026-10-22-pre-neo` (main at 56cb371) and a full git bundle of every branch, sent separately. Earlier today: branch `backup/bat-crlf-2026-10-22` (main at 8fe8a4a) before the line-ending fix.
 - New `[W] Where it won't be` (`orbital/hannibal_neo.py`, `--neo DES`): Earth-impact exclusion for any asteroid or comet from NASA/JPL close-approach data. Each pass is checked against Earth plus 100 km of atmosphere at the nearest edge of JPL's 3-sigma window. The overall verdict always defers to JPL Sentry, because a pass that clears Earth can still lead through a keyhole to a later impact (Bennu is the worked example). Receive-only, no key.

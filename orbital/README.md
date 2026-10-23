@@ -23,6 +23,7 @@
 | Key | What | Who |
 |---|---|---|
 | `HANNIBAL_NORMAL.bat` / `HANNIBAL_LOW_INTERNET.bat` | start with the normal or the bad-connection network profile | everyone |
+| `[Z]` Zombie check (new 2026-10-22) | which satellites on a list still transmit something an amateur station can hear: SatNOGS transmitters on record + vetted observations in the last 30 days, and whether any has an uplink. Default: the 148 military objects from the 17 Oct export. No key. `python hannibal_zombie.py` | everyone |
 | `[W]` Where it won't be (new 2026-10-22) | Earth-impact exclusion for any asteroid or comet from NASA/JPL: every close approach to 2200, nearest edge of the uncertainty window vs the atmosphere, verdict defers to JPL Sentry. No key. `python hannibal_neo.py 99942` | everyone |
 | `[D]` Debris cascade (new 2026-10-22) | Kessler watch from the public CelesTrak catalog: objects per 50 km shell, drag cleanup time, cascade index, and how far the assumptions must move before each shell crosses the line. No key. `python hannibal_kessler.py` | everyone |
 | `[1]` Fleet telemetry | evidence-gated link health: LOW SAMPLE under 8 observations, 95% ranges, stale TLE in red, `*` = last known value | everyone |
@@ -104,6 +105,66 @@ The BlueGlobe dashboard has an **ABOVE NOW** panel (click a row to fly to the sa
 Globalstar satellites on the globe, and both are loaded at start-up), an **ASTEROID MOONS** panel, a **BREACH LOG** panel,
 and N2YO data in the target HUD. `http://localhost:8080/blueglobe_dashboard.html?norad=25544,39444` loads specific
 satellites (digits only, at most 50).
+
+## [Z] Zombie check -- what it proves and what it doesn't
+
+The Home window and the satellite detail export tell you **where** things are. They cannot tell you whether
+anything on them still works: N2YO computes positions from orbital elements, so a satellite that went dark in
+1966 sits in the list exactly like one launched last year. `[Z]` asks the only thing that can tell them apart,
+reception: has anyone actually heard it?
+
+```
+python hannibal_zombie.py                      the 148 military objects over Antwerp, 17 Oct 2026
+python hannibal_zombie.py --above              what N2YO lists as military overhead right now (N2YO key)
+python hannibal_zombie.py --ids 2412,39483 --days 60 --json out.json
+python hannibal_zombie.py --all                also list every object with nothing on record
+```
+
+How it decides, per object:
+
+| Tier | Means |
+|---|---|
+| `HEARD` | a SatNOGS volunteer station logged a vetted "good" observation of it in the window (a carrier on the waterfall or decoded telemetry) |
+| `LISTED, NOT HEARD` | an active transmitter is on record, but nothing good in the window (or nobody scheduled a pass) |
+| `NO ACTIVE TX` | on record, but every known transmitter is marked inactive |
+| `NOT IN SATNOGS` | no transmitter of this object is known to the amateur network |
+| `NOT CHECKED` | the network could not be asked; the verdict says "at least" and never claims a clean zero |
+
+`UPLINK` says whether any transmitter on record has an uplink (a Transceiver or Transponder). Hearing a
+satellite is one thing; sending it something is another, and a relay needs the second.
+
+**Result on 22 Oct 2026 (30 days):** 2 of 148 heard, 0 with an uplink on record. COSMOS 2488 (2013) on UHF FM,
+and ERS 15 (launched 1966) on a CW carrier at 136.439 MHz, the only 1960s object on the list still putting out
+a signal. 142 of the 148 have no transmitter the amateur network knows about.
+
+Limits worth keeping in mind: SatNOGS only knows what amateurs have found, so "not in SatNOGS" is not proof of
+death (military links on bands amateurs don't monitor never show up); "heard" is evidence of a working
+transmitter, not of a link anyone can command. Everything here is receive-only.
+
+## Receive-only and the law (Belgium)
+
+From the Orbital Directorate's regulatory memo of 22 Oct 2026, checked against BIPT's own pages the same day.
+Not legal advice; BIPT is the authority.
+
+* **No licence to listen.** Owning and using a receiver (an SDR, a scanner, a satellite antenna) needs no
+  permit, exam or licence in Belgium. BIPT states that buying and owning a scanner or receiver is allowed.
+* **Licences are for transmitting.** BIPT operator certificates (ON3 and up) and station authorisations are
+  needed only to transmit. Nothing in Hannibal transmits.
+* **The ONL listener number is voluntary.** It comes through the UBA (the Belgian amateur radio union) as a
+  club matter, not a state requirement. Check the current price and terms on uba.be.
+* **What you may listen to is limited.** BIPT allows listening only to frequencies that are open to everyone,
+  or ones the frequency holder has given you permission for. In practice:
+  * fine: ERS 15's carrier, amateur satellites, weather satellites (NOAA, Meteor), the ISS -- what SatNOGS
+    stations receive openly every day;
+  * not fine: deliberately listening in on or decoding military satellite traffic, or anything else not
+    meant for the public;
+  * banned outright: TETRA detectors and speed-radar detectors, even though they are receivers too.
+
+`[Z]` stays on the right side of this line: it reads public SatNOGS records and never decodes anything itself.
+
+Sources: [BIPT: forbidden and/or special equipment](https://www.bipt.be/consumers/radio-frequencies/market-monitoring/forbidden-and-or-special-equipment),
+[BIPT: radio amateurs](https://www.bipt.be/consumers/radio-frequencies/private-use-hobby/radioamateurs),
+[BIPT: general authorisations](https://www.bipt.be/operators/general-authorisations-for-the-use-of-the-radio-spectrum).
 
 ## [I] Breach log -- IP geolocation + phone metadata, for incident write-ups
 
@@ -209,6 +270,7 @@ hannibal_n2yo.py        N2YO REST client          hannibal_login.py  start-up pr
 hannibal_creds.py       credential lookup        hannibal_vault.py  optional "remember me" store
 hannibal_feeder.py      optional ADS-B feeder     hannibal_art.py    Soviet space ASCII art
 hannibal_geoint.py      breach log, IP geolocation, offline phone metadata (menu [I])
+hannibal_zombie.py      zombie check: who still transmits (menu [Z]); zombie_targets_2026-10-17.json = default list
 run_telemetry.py        SatNOGS engine            hannibal_blueglobe.py + blueglobe_dashboard.html  3D dashboard
 patch_hannibal.py       terminal patcher          secret_masking.py, hannibal_security_bootstrap.py, sitecustomize.py
 norad_targets.json      your fleet (edit freely)  hannibal_terminal.spec, build.bat   Windows .exe build
