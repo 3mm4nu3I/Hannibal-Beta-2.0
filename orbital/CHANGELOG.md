@@ -14,7 +14,7 @@ The running copy on the laptop (`Desktop\hannibal_orbital_directorate`) and main
 
 ### Verified
 - Every Python file compiles; menu is `1 2 3 4 H N 5 E 6 7 8 9 W Z D G F K I M R T S A Q`, no duplicate keys or command-line flags.
-- All six orbital tests pass (`altguard`, `eme`, `kessler`, `neo`, `zombie`), plus the root subsea/spatial and evidence-confidence fixtures.
+- All five orbital tests pass (`altguard`, `eme`, `kessler`, `neo`, `zombie`), plus the root subsea/spatial and evidence-confidence fixtures.
 - `[Z]`, `[W]` and `[E]` driven through the merged menu / CLI: zombie check on ERS 15 (heard), Apophis EXCLUDED, EME link budget runs to a verdict.
 
 ### Not done / limits
