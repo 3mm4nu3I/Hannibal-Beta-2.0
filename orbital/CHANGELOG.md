@@ -3,6 +3,23 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-23] Sync: the laptop's work merged into main
+
+### Why
+The running copy on the laptop (`Desktop\hannibal_orbital_directorate`) and main had drifted apart. The laptop had the 16-17 Oct work, which lived only on branch `feature/eme-moonbounce` and was never merged: the home-location fix, `[E]` Moonbounce (EME) and the N2YO altitude guard. Main had `[W]`, `[D]` and `[Z]`, which the laptop lacked. Checked first: the laptop's files match `feature/eme-moonbounce` byte for byte (`hannibal_net.py` and `norad_targets.json` compared directly, every other changed file by size).
+
+### Changed
+- Merged `feature/eme-moonbounce` into main (merge commit, no history rewritten). Backup of main before the day's merges: branch `backup/main-2026-10-23-pre-sync`.
+- One conflict, in this changelog: both sides' entries kept, newest first. `hannibal_orbital.py`, `hannibal_net.py`, `hannibal_n2yo.py`, `hannibal_blueglobe.py` and `README.md` merged without conflicts. `[E]` added to the what's-new table.
+
+### Verified
+- Every Python file compiles; menu is `1 2 3 4 H N 5 E 6 7 8 9 W Z D G F K I M R T S A Q`, no duplicate keys or command-line flags.
+- All six orbital tests pass (`altguard`, `eme`, `kessler`, `neo`, `zombie`), plus the root subsea/spatial and evidence-confidence fixtures.
+- `[Z]`, `[W]` and `[E]` driven through the merged menu / CLI: zombie check on ERS 15 (heard), Apophis EXCLUDED, EME link budget runs to a verdict.
+
+### Not done / limits
+- The optional Earth-export add-on (`hannibal_sat`, not in this repository) also registers `[E]`. With it installed, the two would share a key. It is not installed on the laptop or here, so nothing clashes today; this predates the merge.
+
 ## [2026-10-23] Receive-only and the law (README)
 
 ### Added
@@ -83,6 +100,136 @@ Backups first: branch `backup/main-2026-10-22-pre-neo` (main at 56cb371) and a f
 
 ### Not done / limits
 - The model is deliberately simple: k = 100 trackable fragments per collision, 10 km/s, catalog radar cross-section as collision area, rough average-solar-activity lifetimes, no manoeuvring, tracked objects only. Use the index to compare altitudes, not as a forecast. `--fragments` and `--speed` change the two main assumptions.
+
+## [2026-10-17] Fix: reject non-physical satellite altitudes from N2YO (overhead + detail)
+
+### The bug
+A live overhead run over Antwerp printed **USA 568 (NORAD 66551)** with an altitude of
+**2,408,092,187,602 km** (~2.4 trillion km, i.e. ~16,000 AU). That is not a real orbit and not a
+run-timing artifact: the `above` list takes `alt_km` straight from N2YO's `satalt` field
+(`hannibal_n2yo.above()`), evaluated at a single instant -- nothing is integrated "while the tally
+runs", and no real motion covers trillions of km in the ~15 s of a run. The cause is upstream: N2YO
+served a `satalt` propagated from a **degenerate / immature element set** -- near-zero mean motion, or
+eccentricity >= 1 (a parabolic/hyperbolic "escape" solution) -- which drives the derived altitude to
+absurd values. 66551's very high NORAD id is consistent with a freshly catalogued object whose TLE is
+not yet well fit. The module simply passed the number through, and because elevation is computed
+*locally* from that altitude, the bad object still got a plausible-looking elevation (27.9 deg) and
+sat in the list looking authoritative.
+
+### Fixed
+- **`hannibal_n2yo.py`** -- new `ALT_MAX_KM = 500,000` ceiling and `sane_alt_km(alt)` helper. Any
+  altitude that is missing, non-finite (NaN/inf), negative, or above the ceiling is treated as
+  unusable: `alt_km` becomes `None` and the row is flagged `alt_suspect=True`. The ceiling sits well
+  above every real orbit we carry (VELA pair ~160,000 km near apogee; the Moon itself is ~384,400 km)
+  so nothing legitimate is clipped, while 10^12 km is rejected outright.
+  - `above()`: suspect rows keep their identity, sub-point and ground distance (they are still "above"
+    per N2YO's own server-side filter) but get **no geometric elevation** (`el=None`, since a bad
+    altitude makes the elevation meaningless) and **sink to the bottom** of the list.
+  - `position()`: the `[S]` satellite-detail lookup flags a suspect altitude the same way. N2YO's own
+    reported elevation there is left untouched (it does not depend on `satalt`).
+- **`hannibal_orbital.py`** -- the overhead table and the satellite-detail screen now render a suspect
+  altitude/elevation as `?` and append `[suspect TLE: altitude rejected]`, instead of crashing on
+  `None` or printing a trillion-km figure as if it were real. Column alignment preserved.
+
+### Verified
+- **`test_hannibal_altguard.py`** (new, 5 offline tests, all pass): `sane_alt_km` accepts LEO/GEO/VELA/
+  lunar distances and rejects 2.4e12 km, the ceiling+0.1, negatives, NaN, inf and junk strings; the
+  ceiling boundary is inclusive; `above()` on a payload carrying the real USA 568 garbage row sets
+  `alt_km=None`/`alt_suspect=True`/`el=None`, keeps the row, and sorts it last; `position()` flags the
+  suspect altitude while preserving N2YO's elevation.
+- Existing `test_hannibal_eme.py` (6 tests) still pass -- no regression.
+- Render smoke-test: a two-row table (one good GEO, one suspect) prints the good row normally and the
+  suspect row as `?  ?  ... [suspect TLE: altitude rejected]` with columns aligned.
+
+### Not done / notes
+- The guard is a **display/ingestion** safeguard, not a TLE re-fit: it does not try to recover a correct
+  altitude for a bad element set, only to stop printing a false one. When N2YO later serves a sane
+  `satalt` for the object (once its orbit is fit), it shows normally with no code change.
+- `ALT_MAX_KM` is deliberately generous (0.5 Mm). If a genuine cislunar/deep-space object in a
+  monitored category ever needs to show, raise the ceiling or special-case it; today nothing we track
+  lives above it.
+
+## [2026-10-16] New: Moonbounce (EME) link budget -- `[E]` / `--eme`
+
+### What it is
+The Moon is a passive natural reflector. Transmit at it on an amateur band you are licensed for and
+~2.5 s later your own signal comes back, ~250-270 dB weaker. The new `hannibal_eme.py` works out whether
+your station could actually hear that echo, using the Moon's live range and range-rate over your home
+(JPL Horizons, the same source as `[5]` Sky tonight -- no key needed).
+
+### Added
+- **`hannibal_eme.py`** -- pure, testable physics:
+  - path loss `L = (4*pi)^3 R^4 / (lambda^2 * sigma)` with the Moon's radar cross-section (albedo ~6.5%);
+  - parabolic-dish gain `G = eta (pi D / lambda)^2`;
+  - two-way Doppler `f_d = -2 f0 v/c` (sign: receding Moon -> echo lower) to tune the SDR;
+  - thermal noise `N = k_B T_sys B` and coherent processing gain `10 log10(B*tau)`;
+  - SNR reported in a 2500 Hz reference bandwidth (the WSJT-X convention) and compared against the
+    published decode thresholds of Q65 / JT65 / FT8 / CW / SSB for an honest "can you hear it" verdict.
+  - `current_moon()` reads az/el, range and range-rate from Horizons through the masked, cached,
+    rate-limited `hannibal_net` layer.
+- **`[E]` menu entry and `--eme` flag** in `hannibal_orbital.py`: prompts for band, dish and power (sensible
+  23 cm defaults, overridable with `HANNIBAL_EME_*` env vars), then prints the full budget: Moon position
+  and whether it is up, range, round-trip time, every line of the link budget, the Doppler to tune to, the
+  echo-depth smear, and the mode ladder with the verdict.
+- **`test_hannibal_eme.py`** -- 6 offline tests pinning the physics (252/271 dB path loss, dish-gain f^2
+  scaling, Doppler sign and magnitude, 2.56 s round trip, 11.6 ms depth, noise floor, verdict flips).
+
+### Verified (offline + one live read)
+- All 6 tests pass. Live read over Antwerp (23 cm, 3 m dish @55%, 300 W, Tsys 100 K): echo received
+  ~-162 dBm against a ~-145 dBm noise floor -> SNR ~-17.6 dB in 2500 Hz -> detectable with Q65/JT65/FT8,
+  not CW by ear. A single 2 m yagi comes out ~-38 dB (no echo); a 10 m / 1 kW dish ~+13 dB (SSB-capable) --
+  all matching real-world EME experience.
+
+### Notes / not done
+- Transmit figures assume you hold the licence and may use the band. The verdict is a model, not a promise:
+  it does not include ground/sky-noise pointing geometry, the exact libration coherence time, or non-reciprocal
+  Tx/Rx paths. `l_misc` (default 4 dB) lumps feedline, Faraday/polarisation, pointing and atmosphere.
+- Depends on the home-location fix (needs `home_line` / `home.set`); stacked on that branch.
+
+## [2026-10-16] Fix: "overhead now" was silently computed for 0N 0E
+
+### What was wrong
+`hannibal_net.home_location()` fell back to latitude 0, longitude 0 (the Gulf of Guinea) whenever
+`HANNIBAL_HOME_LAT` / `HANNIBAL_HOME_LON` were not set, and nothing on screen said so. Every
+observer-dependent screen used that point: `[H]` home window, `[N]` > Military / Globalstar / any category
+overhead, `[5]` sky tonight, Horizons observer ephemerides, satellite passes, and the BlueGlobe home marker.
+
+How it showed up: a real run listed "MILITARY OVERHEAD NOW (113 above the horizon)" with geostationary
+satellites (UFO, DSCS, AEHF 2, SKYNET 5C, SICRAL 1B, LUCH) at 55-85 deg elevation. The table's own columns
+gave it away: DROR-1, sub-point 0.0, -4.0, "GROUND km 450" = exactly 4 deg from 0N 0E. From a mid-latitude
+European home (~51N) no geostationary satellite can rise above ~31 deg. The orbital math was right; only the
+observer was wrong.
+
+### What changed
+- `hannibal_net.home_location()` now looks up the home in this order, first match wins:
+  1. `HANNIBAL_HOME_LAT` **and** `HANNIBAL_HOME_LON` (+ `_ALT_KM`, `_NAME`) environment variables, as before;
+  2. **new** `~/.hannibal/home.json` in your user profile (owner-only; never in the project folder);
+  3. nothing set: still 0, 0 so nothing crashes, but marked `set=False` and named `HOME NOT SET (0N 0E)`.
+  The result also carries `source` (`environment`, the file path, or `unset`).
+- **New** `python hannibal_orbital.py --set-home LAT LON NAME` writes `~/.hannibal/home.json` once
+  (decimal degrees, north/east positive; range-checked). Can be combined with `--home`, `--sky`, etc.
+  `hannibal_net.save_home()` is the same thing for code. Honors `HANNIBAL_VAULT_DIR` like the credential vault.
+- Every overhead table now prints the observer under its title (`Observer: NAME (+lat, +lon)`), or a red
+  `[!] NO HOME SET: using 0N 0E. Fix: ...` line. The home window shows it once, under its header. The sky
+  screen shows the same warning. `--status` reports the home and where it came from, or `NOT SET` in red.
+- BlueGlobe (`hannibal_blueglobe._config_payload`) now uses `home_location()` too, so a saved home reaches
+  the 3D globe (served on 127.0.0.1 only, as before). Falls back to the old env-only lookup if the import fails.
+- Partial environment (only `HANNIBAL_HOME_LAT` set) no longer silently pairs it with longitude 0: it is
+  ignored and the saved file (or the warning) applies.
+- No coordinates added to source: this repository is public.
+
+### Verified (offline, in a clean environment)
+- nothing set -> `set=False`, home window / sky / overhead tables / `--status` all show the warning;
+- `--set-home 151 4 X` refused (rc 2), `--set-home 51` refused (rc 2); a valid call writes `home.json`
+  with mode 0600 and every screen then shows `Observer: <name>`;
+- both env vars set -> env wins; only one set -> file wins;
+- BlueGlobe payload picks up the saved home;
+- spherical check with the module's own `elevation_deg`: from 51.2N the best possible geostationary
+  elevation is 31.4 deg (DROR-1 at 0, -4 would be 30.8 deg, 5,750 km ground distance).
+
+### Not verified
+- A live N2YO `above` call from the new home (needs your N2YO key, which never leaves your machine).
+- The frozen `.exe`: rebuild it (`build.bat`) to pick this up; an old build keeps the old behaviour.
 
 ## [2026-10-11] Integration: one Orbital Directorate, everything merged
 
