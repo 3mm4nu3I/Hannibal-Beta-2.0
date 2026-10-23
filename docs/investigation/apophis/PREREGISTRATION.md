@@ -92,6 +92,20 @@ How it is scored:
 - **Model wrong:** they fall outside. That would mean the orbit models, the uncertainty estimates or the force models (Yarkovsky) were off. It would be worth publishing either way.
 - **Also recorded:** any change to Apophis's spin or surface from Earth's tides that the spacecraft report, set against the predictions published before April 2029.
 
+### 4d. The bet (recorded 23 Oct 2026, 22:10 UTC)
+
+Two predictions for the closest approach on 13 April 2029, settled by the reconstructed orbit after the flyby. The stake is reputation: whoever is wrong has it in this repository for good.
+
+| Who | Prediction | Basis |
+|---|---|---|
+| Bram (Project Hannibal) | **28,000 to 29,000 km** from Earth's centre: "the model is off" | the investigators' hypothesis |
+| Claude (AI assistant) | **38,008 to 38,015 km**, closest at 21:45 UTC ± 1 min | JPL solution 220's 3-sigma window, confirmed independently by ESA |
+
+Notes, recorded now so nobody can reinterpret them later:
+- Both predictions are misses: 28,000 km is still about 21,500 km above the surface.
+- Bram's range sits about 9,000 to 10,000 km below the current prediction, which is several thousand times JPL's stated uncertainty. If it is right, the models were wrong. The daily brief would show it well before the flyby: C5 fires on the first new orbit solution that moves the 2029 distance by more than 3.3 km, and C6 if a push is detected.
+- A result between the two ranges counts as a win for neither, but it would still prove the model wrong if it falls outside the 3-sigma window.
+
 ## 5. What would refute the concern
 
 If none of C1 to C5 is triggered by new orbit solutions that use observations from Apophis's next observing window (expected from about 2027), professional data gives no reason for concern. The sealed hypothesis may make its own prediction; it is judged against what it said.

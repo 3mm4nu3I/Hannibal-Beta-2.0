@@ -302,6 +302,13 @@ def render(cur, path):
             "Worst case used throughout: distances are JPL's nearest 3-sigma edge, never the nominal. "
             "Consequence if it ever did hit (upper bound: 370 m, 3.5 g/cm³, 12.6 km/s): about 1,800 Mt, "
             "35 Tsar Bombas. The verdict above says whether it can hit; this line says what it would mean.", small))
+        p29 = a.get("p2029") or {}
+        if p29:
+            d = p29["distance_km"]
+            lead = ("Claude's range" if 38_008 <= d <= 38_015 else "Bram's range" if 28_000 <= d <= 29_000
+                    else "neither range")
+            s.append(Paragraph(f"The bet (PREREGISTRATION 4d): Bram 28,000–29,000 km; Claude 38,008–38,015 km. "
+                               f"Today's prediction: {d:,.0f} km, inside {lead}.", small))
         rows = [["pass (TDB)", "distance km", "nearest edge km", "window km", "above atmos. km", "verdict"]]
         for p in a["passes"]:
             rows.append([p["date"], f"{p['distance_km']:,.0f}", f"{p['min_km']:,.0f}", f"{p['window_km']:,.1f}",
