@@ -1171,7 +1171,7 @@ def run_napalm_engine(composite, C_t, K, E_t, T_t, war_snap, infra_snap, ins_sna
 
     prompt = f"""You are PROJECT HANNIBAL, a geopolitical/macro risk-signal AI.
 Evaluate this LIVE telemetry:
-Friction: {composite:.2f} | C_t Scalar: {C_t:.2f} | K: {K} | E_t: {E_t:.4f}
+Friction: {composite:.2f} | C_t Scalar: {C_t:.2f} | K (0-1, vs 24h baseline): {K:.2f} | E_t: {E_t:.4f}
 
 INTERCEPTS:
 {intel_war}
@@ -1615,6 +1615,74 @@ def get_compounding_multiplier(war_snap, infra_snap, osint_snap):
             if kw in t_low: hits += 1
     return 1.0 + (hits * 0.15)
 
+# --- BEGIN BASELINE ANOMALY (tested by test_volcano_anomaly.py) ---
+# K, I and L used to be 1 whenever their buffer held ANY item. The buffers
+# keep up to 100 items for an hour and are almost never empty, so all three
+# sat at 1.0 all day, the composite saturated and the LLM advisories always
+# read "maximum friction". Each is now scored against its own recent
+# history: count the items from the last FRESH_MINUTES, compare with the
+# median and MAD of the samples taken every SAMPLE_SECONDS over the last
+# day, and map the excess to 0..1. An ordinary day scores about 0; a burst
+# well above the usual rate climbs toward 1.
+ANOMALY_FRESH_MINUTES = 30
+ANOMALY_SAMPLE_SECONDS = 180
+ANOMALY_HISTORY = 480         # 480 x 3 min = 24 h of samples
+ANOMALY_MIN_SAMPLES = 20      # ~1 h of samples before scoring starts
+ANOMALY_FULL_SCALE_MADS = 6.0 # this many MADs above the median scores 1.0
+ANOMALY_FLAG = 0.5            # displays and K-gated logic treat >= this as "active"
+C_T_MAX_EXCESS = 0.5          # C_t is capped at 1.5 (was unbounded: 1 + 0.15 per keyword hit)
+ANOMALY_PATH = SCRIPT_DIR / "composite_baseline.json"
+
+def fresh_count(snap, minutes=ANOMALY_FRESH_MINUTES, now=None):
+    """Items in a (epoch_ts, item) buffer newer than `minutes`."""
+    cut = (time.time() if now is None else now) - minutes * 60
+    return sum(1 for ts, _ in snap if ts >= cut)
+
+class BaselineAnomaly:
+    """Rolling median/MAD baseline per channel. Not thread-safe; used only
+    from main()'s render loop."""
+
+    def __init__(self, names=("K", "I", "L"), maxlen=ANOMALY_HISTORY):
+        self.hist = {n: deque(maxlen=maxlen) for n in names}
+        self.last_sample = None
+
+    def maybe_sample(self, counts, now_mono):
+        """Append one sample per channel at most every ANOMALY_SAMPLE_SECONDS.
+        Returns True when a sample was taken."""
+        if self.last_sample is not None and now_mono - self.last_sample < ANOMALY_SAMPLE_SECONDS:
+            return False
+        for n, c in counts.items():
+            self.hist[n].append(int(c))
+        self.last_sample = now_mono
+        return True
+
+    def score(self, name, count):
+        h = self.hist[name]
+        if len(h) < ANOMALY_MIN_SAMPLES:
+            return 0.0
+        med = float(np.median(h))
+        mad = float(np.median([abs(x - med) for x in h])) or 1.0
+        return max(0.0, min((count - med) / (ANOMALY_FULL_SCALE_MADS * mad), 1.0))
+
+    def warming(self):
+        return min(len(h) for h in self.hist.values()) < ANOMALY_MIN_SAMPLES
+
+    def to_json(self):
+        return json.dumps({n: list(h) for n, h in self.hist.items()})
+
+    def load_json(self, text):
+        try:
+            data = json.loads(text)
+            for n, h in self.hist.items():
+                h.extend(int(x) for x in data.get(n, [])[-h.maxlen:])
+        except (ValueError, TypeError, AttributeError):
+            pass
+
+def bounded_multiplier(raw):
+    """Caps get_compounding_multiplier()'s output at 1 + C_T_MAX_EXCESS."""
+    return 1.0 + max(0.0, min(raw - 1.0, C_T_MAX_EXCESS))
+# --- END BASELINE ANOMALY ---
+
 # ---------------------------------------------------------
 # LABOR & UNUSUAL-VOLATILITY CSV SCORING  [from addendum.py]
 # ---------------------------------------------------------
@@ -1753,7 +1821,7 @@ def calculate_sector_prediction(view_key, E_t, T_t, C_t, composite, K=0):
         # the primary drivers, not E_t/T_t -- sanctions/conflict exposure
         # rather than routine energy-market movement.
         score = (K * 0.40) + (C_t * 0.35)
-        reason = "Active kinetic exposure elevating sanctions/conflict risk." if K else "Chokepoint-driven baseline risk, no active kinetic flag."
+        reason = "Active kinetic exposure elevating sanctions/conflict risk." if K >= ANOMALY_FLAG else "Chokepoint-driven baseline risk, no active kinetic flag."
     elif view_key == "A":
         # [adapted from nmnm.py] China: chokepoint index + overall composite
         # friction -- Taiwan Strait / South China Sea tension shows up
@@ -1881,6 +1949,10 @@ def main():
     threading.Thread(target=price_poll_daemon, name="Price-Poller", daemon=True).start()
 
     last_prediction_run = 0.0
+    anomaly = BaselineAnomaly()
+    saved = read_encrypted_text(ANOMALY_PATH)
+    if saved:
+        anomaly.load_json(saved)
 
     try:
         while True:
@@ -1904,16 +1976,20 @@ def main():
                 insider_flag_snap = large_insider_trade_flag
                 chat_snap = list(napalm_chat_history)  # [from HBL5.py]
 
-            global_K = 1 if len(war_snap) > 0 else 0
-            global_I_score = 1 if len(infra_snap) > 0 else 0
-            global_L = 1 if len(l_snap) > 0 else 0
+            k_n, i_n, l_n = fresh_count(war_snap), fresh_count(infra_snap), fresh_count(l_snap)
+            if anomaly.maybe_sample({"K": k_n, "I": i_n, "L": l_n}, now_mono):
+                write_encrypted_text(ANOMALY_PATH, anomaly.to_json())
+            global_K = anomaly.score("K", k_n)
+            global_I_score = anomaly.score("I", i_n)
+            global_L = anomaly.score("L", l_n)
+            baseline_tag = f"{GRAY}(baseline warming up){RESET}" if anomaly.warming() else ""
             global_E_t = _avg_last_return(ENERGY_PROXY_TICKERS)
             global_T_t = _avg_last_return(TRANSPORT_PROXY_TICKERS)
             global_labor_fric = labor_intensity()   # [from addendum.py]
             global_vol_int = volatility_intensity() # [from addendum.py]
 
             prediction_momentum, _ = compute_prediction_momentum()
-            global_C_t = get_compounding_multiplier(war_snap, infra_snap, osint_snap)
+            global_C_t = bounded_multiplier(get_compounding_multiplier(war_snap, infra_snap, osint_snap))
             delta_hat = compute_delta_i_hat(global_E_t, global_T_t, global_K, insider_flag_snap)
             global_composite = compute_composite_index(
                 global_K, global_I_score, global_L, len(w_snap), len(f_snap),
@@ -1925,7 +2001,7 @@ def main():
                 ts_now = datetime.datetime.now().isoformat(timespec="seconds")
                 write_prediction(
                     ts_now, "COMPOSITE_TICK", "Global Aggregate", global_composite * 100, global_composite,
-                    f"E_t={global_E_t:.3f}, T_t={global_T_t:.3f}, K={global_K}, C_t={global_C_t:.2f}, "
+                    f"E_t={global_E_t:.3f}, T_t={global_T_t:.3f}, K={global_K:.2f}, I={global_I_score:.2f}, L={global_L:.2f}, C_t={global_C_t:.2f}, "
                     f"Labor={global_labor_fric:.2f}, Vol={global_vol_int:.2f}"
                 )
                 last_prediction_run = now_mono
@@ -1974,7 +2050,7 @@ def main():
                         print(f"  {GRAY}Top relevant headline ({len(sector_news)} ranked this sector):{RESET} {top_item['text'][:75]}")
                     print(f"{BLUE}========================================================================================={RESET}")
 
-                    k_str = f"{RED}ACTIVE ({len(war_snap)} alerts){RESET}" if global_K else f"{GRAY}inactive{RESET}"
+                    k_str = (f"{RED}ELEVATED {global_K:.2f}{RESET}" if global_K >= ANOMALY_FLAG else f"{GRAY}{global_K:.2f}{RESET}") + f" ({len(war_snap)} buffered) {baseline_tag}"
                     print(f" {GRAY}MODEL STATE:{RESET} E_t={global_E_t:+.4f}  T_t={global_T_t:+.4f}  K={k_str}  C_t={global_C_t:.2f}  Labor={global_labor_fric:.2f}  Vol={global_vol_int:.2f}  delta_I_hat={delta_hat:+.5f}")
                     print(f" {'TICKER':<8} | {'PRICE':<9} | {'DELTA (%)':<9} | {'Z-SCORE':<7} | {'MOMENTUM':<{SPARK_WIDTH}} | {'STATUS':<15}")
                     print("-" * 89)
@@ -2003,11 +2079,11 @@ def main():
 
                     print(f" {'LATEST INFRA/ATOMIC & LABOR ALERTS':<65} | {'DATA':<8} | {'PREDICTION'}")
                     print("-" * 89)
-                    if global_I_score:
+                    if infra_snap:
                         for _, inf in infra_snap[:2]: print(f" {inf['text']:<65} | {inf['nums']:<8} | {inf['prediction']}")
                     else: print(f" {GREEN}>> INFRA/ATOMIC RADAR: NOMINAL (0 EVENTS){RESET}")
 
-                    if global_L:
+                    if l_snap:
                         for _, lab in l_snap[:2]: print(f" {lab['text']:<65} | {lab['nums']:<8} | {lab['prediction']}")
                     else: print(f" {GREEN}>> LABOR/UNION RADAR: INACTIVE (0 EVENTS){RESET}")
 
@@ -2069,12 +2145,12 @@ def main():
                         print(f"  {c}{data['name']:<30}{RESET} [{c}{disp_bar}{RESET}] {disp_val:+.2f} ({a})")
 
                     print(f"\n{BLUE}========================================================================================={RESET}")
-                    print(f"  {GRAY}Matrix weights governed by C_t ({global_C_t:.2f}), K ({global_K}), E_t ({global_E_t:.3f}){RESET}")
+                    print(f"  {GRAY}Matrix weights governed by C_t ({global_C_t:.2f}), K ({global_K:.2f}), E_t ({global_E_t:.3f}){RESET}")
 
                 elif view_key == "I":
                     print(f"{PURPLE}  CRITICAL INFRASTRUCTURE, POWER GRIDS & ATOMIC AGENCY (IAEA) RADAR{RESET}")
                     print(f"{BLUE}========================================================================================={RESET}")
-                    print(f" Infra Severity Index : {RED if global_I_score else GREEN}{'HIGH VULNERABILITY' if global_I_score else 'NOMINAL / MONITORED'}{RESET}")
+                    print(f" Infra Severity Index : {RED if global_I_score >= ANOMALY_FLAG else GREEN}{'HIGH VULNERABILITY' if global_I_score >= ANOMALY_FLAG else 'NOMINAL / MONITORED'} (score {global_I_score:.2f}){RESET}")
                     print(f" Active Alerts        : {len(infra_snap)} verified events in persistent buffer.\n")
                     if not infra_snap:
                         print(f" {GRAY}No critical grid, subsea, or atomic incidents active.{RESET}")
@@ -2129,7 +2205,7 @@ def main():
                 elif view_key == "K":
                     print(f"{PURPLE}  WORLDWIDE MULTI-THEATER KINETIC ESCALATION & STRIKE MAPPING{RESET}")
                     print(f"{BLUE}========================================================================================={RESET}")
-                    k_stat = f"{RED}ACTIVE ({len(war_snap)} alerts){RESET}" if global_K else f"{GRAY}INACTIVE / STANDBY{RESET}"
+                    k_stat = (f"{RED}ELEVATED{RESET}" if global_K >= ANOMALY_FLAG else f"{GRAY}AT BASELINE{RESET}") + f" (score {global_K:.2f}, {len(war_snap)} buffered) {baseline_tag}"
                     print(f" Kinetic Escalation Flag (K): {k_stat} | Cascading Threat Index (C_t): {global_C_t:.2f}")
                     print(f" Incoming Worldwide Strike & Military Buffer (Persistent):\n")
                     if not war_snap: print(f" {GRAY}No kinetic alerts in the active buffer.{RESET}")
