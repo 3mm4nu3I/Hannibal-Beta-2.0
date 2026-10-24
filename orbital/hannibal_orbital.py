@@ -1037,6 +1037,18 @@ try:
 except Exception:  # noqa: BLE001
     hannibal_neo = None
 
+# --- Where it will be (added 2026-10-23) ----------------------------------------------------------------
+# [L] screen: the other half of [W]. Minute-by-minute flyby track (distance, the point on Earth it is
+# overhead of, 3-sigma box), the 3-sigma envelope at every pass, and the impossible-event test for an
+# impact off Lisbon (JPL Horizons). Receive-only, no key.
+try:
+    import hannibal_neo_where
+    MENU.insert(next(i for i, m in enumerate(MENU) if m[0] == "D"),
+                ("L", "Where it will be      flyby track, 3-sigma envelope, impact-off-Lisbon test (JPL Horizons)",
+                 hannibal_neo_where.screen_where))
+except Exception:  # noqa: BLE001
+    hannibal_neo_where = None
+
 # --- Zombie check (added 2026-10-22) --------------------------------------------------------------------
 # [Z] screen: which satellites on a list still transmit something an amateur station can hear, from the
 # SatNOGS DB (transmitters on record) and Network (vetted "good" observations). Receive-only, no key.
@@ -1272,6 +1284,8 @@ def main(argv=None):
     ap.add_argument("--no-anim", action="store_true", help="skip the boot animation")
     ap.add_argument("--sat", metavar="NORAD", type=int, help="N2YO detail for one satellite (position, TLE, passes)")
     ap.add_argument("--neo", metavar="DES", help="where it won't be: impact exclusion for one asteroid/comet (JPL)")
+    ap.add_argument("--neo-where", metavar="DES", help="where it will be: flyby track, 3-sigma envelope and "
+                                                       "impact-off-Lisbon test (JPL Horizons)")
     ap.add_argument("--no-login", action="store_true", help="do not ask for the Space-Track login / N2YO key")
     ap.add_argument("--set-home", nargs="+", metavar="LAT_LON_NAME",
                     help="save your observer location to ~/.hannibal/home.json, e.g. --set-home 48.8566 2.3522 Paris "
@@ -1306,6 +1320,7 @@ def main(argv=None):
     ran = False
     one_shots.append(("sat", lambda: _satellite_detail(args.sat, print, color)))
     one_shots.append(("neo", lambda: hannibal_neo and print(hannibal_neo.report(args.neo))))
+    one_shots.append(("neo_where", lambda: hannibal_neo_where and print(hannibal_neo_where.report(args.neo_where))))
     one_shots.append(("zombie", lambda: hannibal_zombie and print(hannibal_zombie.report())))
     needs_keys = ("scan", "decay", "conjunctions", "boxscore", "home", "sat", "dashboard")
     if any(getattr(args, n) for n in needs_keys) and not args.no_login:
