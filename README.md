@@ -192,7 +192,8 @@ orbital/                        Orbital Directorate: every space module, its tes
 docs/reports/                   mission reports with their data and build scripts
 docs/changelogs/, docs/roadmap/ release notes and roadmap PDFs
 CHANGELOG.md, ROADMAP.md        what changed (and what was verified); where it is going
-VolcanoLlamaNapalm.py, *_pre_*  archived iterations kept for history
+VolcanoLlamaNapalm.py           the base engine the terminal was merged from (its anomaly block is tested)
+*.pre_*, *_hardened.py          earlier iterations of the terminal, kept for history
 ```
 
 ## How this was built
