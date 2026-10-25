@@ -1,0 +1,414 @@
+{
+  "stamp": "2026-10-24_1841",
+  "stamp_human": "Sat 24 Oct 2026, 18:41 UTC",
+  "generated": "2026-10-24T18:41:35.471162+00:00",
+  "apophis": {
+    "status": "ok",
+    "verdict": "EXCLUDED",
+    "reason": "Every pass clears the atmosphere and the object is removed from JPL's Sentry risk list.",
+    "orbit_id": "220",
+    "condition_code": "0",
+    "n_obs": 7370,
+    "last_obs": "2022-04-09",
+    "sentry": "removed",
+    "sentry_removed": "2021-02-21 08:22:28",
+    "passes": [
+      {
+        "date": "2029-Apr-13 21:46",
+        "distance_km": 38011.45916295157,
+        "min_km": 38008.18140734614,
+        "window_km": 6.555534466446261,
+        "clearance_above_atmosphere_km": 31530.044407346144,
+        "verdict": "EXCLUDED",
+        "rough": false
+      },
+      {
+        "date": "2051-Apr-20 02:05",
+        "distance_km": 6206849.019475985,
+        "min_km": 5969533.176014308,
+        "window_km": 474687.87159547117,
+        "clearance_above_atmosphere_km": 5963055.039014308,
+        "verdict": "EXCLUDED",
+        "rough": false
+      },
+      {
+        "date": "2102-Sep-11 20:52",
+        "distance_km": 3499720.3257977692,
+        "min_km": 3365402.1124721263,
+        "window_km": 491560.6022197553,
+        "clearance_above_atmosphere_km": 3358923.975472126,
+        "verdict": "EXCLUDED",
+        "rough": false
+      },
+      {
+        "date": "2116-Apr-12 21:44",
+        "distance_km": 2627072.7362613273,
+        "min_km": 154849.44637788375,
+        "window_km": 15452640.318569819,
+        "clearance_above_atmosphere_km": 148371.30937788376,
+        "verdict": "EXCLUDED",
+        "rough": true
+      }
+    ],
+    "p2029": {
+      "date": "2029-Apr-13 21:46",
+      "distance_km": 38011.45916295157,
+      "min_km": 38008.18140734614,
+      "window_km": 6.555534466446261
+    },
+    "where": {
+      "status": "ok",
+      "closest_utc": "2029-Apr-13 21:45",
+      "closest_km": 38015.03850902985,
+      "sub_lat": 28.97029304086461,
+      "sub_lon": -43.06967813464473,
+      "box": [
+        2.5208842273538856,
+        1.6568759470618093,
+        3.2776
+      ],
+      "envelope": [
+        {
+          "date": "2029-Apr-13 21:46",
+          "distance_km": 38011.45916295157,
+          "time_uncertainty": "< 00:01",
+          "rough": false,
+          "along_km": 2.5232190922766358,
+          "across_km": 1.675019365274658,
+          "range_pm_km": 3.2805
+        },
+        {
+          "date": "2051-Apr-20 02:05",
+          "distance_km": 6206849.019475985,
+          "time_uncertainty": "08:07",
+          "rough": false,
+          "along_km": 221279.58728786107,
+          "across_km": 49.361230830196945,
+          "range_pm_km": 237314.347
+        },
+        {
+          "date": "2102-Sep-11 20:52",
+          "distance_km": 3499720.3257977692,
+          "time_uncertainty": "15:17",
+          "rough": false,
+          "along_km": 1887133.1342452725,
+          "across_km": 206.74650297374086,
+          "range_pm_km": 243130.748
+        },
+        {
+          "date": "2116-Apr-12 21:44",
+          "distance_km": 2627072.7362613273,
+          "time_uncertainty": "7_11:21",
+          "rough": true,
+          "along_km": 10290190.462637005,
+          "across_km": 24.702584700281086,
+          "range_pm_km": 12716358.3
+        }
+      ],
+      "lisbon": {
+        "verdict": "IMPOSSIBLE",
+        "closest_km": 32495.176018632912,
+        "closest_time": "2029-Apr-13 21:39",
+        "nearest_edge_km": 32491.893318632912,
+        "clearance_above_atmosphere_km": 32391.893318632912,
+        "dark_from": "2029-Apr-13 19:41",
+        "brightest_mag": 2.783,
+        "note": null,
+        "error": null
+      }
+    }
+  },
+  "crosscheck": {
+    "status": "ok",
+    "verdict": "CONSISTENT",
+    "reason": "JPL and ESA agree within their uncertainties, no pass reaches the atmosphere in either, and neither risk list carries the object",
+    "concerns": [],
+    "notes": [],
+    "jpl_sentry": "removed 2021-02-21 08:22:28",
+    "esa_risk_list": "not listed",
+    "jpl_orbit": {
+      "orbit_id": "220",
+      "n_obs_used": 7370,
+      "last_obs": "2022-04-09",
+      "condition_code": "0"
+    },
+    "esa_observations": {
+      "count": 9577,
+      "optical": 8163,
+      "from_space": 1364,
+      "radar": 50,
+      "first": "2004-03-15",
+      "last": "2022-04-09"
+    },
+    "nongrav": {
+      "jpl": {
+        "A1": [
+          5e-13,
+          4.892e-13
+        ],
+        "A2": [
+          -2.901766637153165e-14,
+          1.859e-16
+        ]
+      },
+      "esa": {
+        "A2": [
+          -2.90012877256919e-14,
+          2.32321e-16
+        ]
+      }
+    },
+    "passes": [
+      {
+        "date": "2029-Apr-13 21:46",
+        "status": "AGREE",
+        "jpl_km": 38011.45916295157,
+        "esa_km": 38013.8046437948,
+        "diff_km": 2.34548084322887,
+        "n_sigma": 1.3698486877864344,
+        "time_diff_s": 12.64
+      },
+      {
+        "date": "2044-Aug-24 07:17",
+        "status": "AGREE",
+        "jpl_km": 12012180.671198001,
+        "esa_km": 12175046.934131723,
+        "diff_km": 162866.26293372177,
+        "n_sigma": 1.5594884853985929,
+        "time_diff_s": -61224.896
+      },
+      {
+        "date": "2051-Apr-20 02:05",
+        "status": "AGREE",
+        "jpl_km": 6206849.019475985,
+        "esa_km": 6009817.438407323,
+        "diff_km": -197031.581068662,
+        "n_sigma": 1.553423233841458,
+        "time_diff_s": -23806.208
+      },
+      {
+        "date": "2066-Sep-16 01:59",
+        "status": "AGREE",
+        "jpl_km": 10387038.198850187,
+        "esa_km": 11142091.014039295,
+        "diff_km": 755052.8151891083,
+        "n_sigma": 1.537240644682548,
+        "time_diff_s": 25412.992
+      },
+      {
+        "date": "2073-Jul-27 18:10",
+        "status": "AGREE",
+        "jpl_km": 16797950.98736386,
+        "esa_km": 16594191.380206242,
+        "diff_km": -203759.6071576178,
+        "n_sigma": 1.4922801432260588,
+        "time_diff_s": 127841.44
+      },
+      {
+        "date": "2080-May-09 07:59",
+        "status": "AGREE",
+        "jpl_km": 13002040.791212812,
+        "esa_km": 13154451.382851444,
+        "diff_km": 152410.59163863212,
+        "n_sigma": 1.4062251960916694,
+        "time_diff_s": 56587.84
+      },
+      {
+        "date": "2087-Apr-07 12:20",
+        "status": "AGREE",
+        "jpl_km": 14326095.723633852,
+        "esa_km": 14534892.709840553,
+        "diff_km": 208796.98620670103,
+        "n_sigma": 1.5943696138647212,
+        "time_diff_s": -9471.872
+      },
+      {
+        "date": "2102-Sep-11 20:52",
+        "status": "AGREE",
+        "jpl_km": 3499720.3257977692,
+        "esa_km": 3803328.7687494545,
+        "diff_km": 303608.4429516853,
+        "n_sigma": 1.40379351067236,
+        "time_diff_s": -49568.0
+      },
+      {
+        "date": "2116-Apr-12 21:44",
+        "status": "AGREE",
+        "jpl_km": 2627072.7362613273,
+        "esa_km": 12161756.717235204,
+        "diff_km": 9534683.980973877,
+        "n_sigma": 2.0082620646499425,
+        "time_diff_s": -396631.712
+      },
+      {
+        "date": "2109-Mar-18 20:01 UTC",
+        "status": "ESA only",
+        "jpl_km": null,
+        "esa_km": 27279409.65307146,
+        "diff_km": null,
+        "n_sigma": null,
+        "time_diff_s": null
+      },
+      {
+        "date": "2109-Jun-11 06:16 UTC",
+        "status": "ESA only",
+        "jpl_km": null,
+        "esa_km": 18108299.588103056,
+        "diff_km": null,
+        "n_sigma": null,
+        "time_diff_s": null
+      },
+      {
+        "date": "2124-Sep-21 03:37 UTC",
+        "status": "ESA only",
+        "jpl_km": null,
+        "esa_km": 22147820.60308285,
+        "diff_km": null,
+        "n_sigma": null,
+        "time_diff_s": null
+      }
+    ],
+    "evidence": "docs/investigation/apophis/evidence/2026-10-24_1841",
+    "manifest_sha256": "9872e081d89e46072c797ad59bc655a4f694205385bc39ea5ca67768f6c6cfee",
+    "sources_ok": 7,
+    "sources": 7
+  },
+  "satellites": {
+    "status": "ok",
+    "rows": [
+      {
+        "norad": 25544,
+        "name": "ISS (ZARYA)",
+        "last_good": "2026-10-24 17:40",
+        "age_h": 1.0140197672222222,
+        "stations": 22,
+        "sample": 25,
+        "state": "LIVE",
+        "stale": false,
+        "next_pass": "10-26 17:21 SGP",
+        "db_status": "in orbit"
+      },
+      {
+        "norad": 39444,
+        "name": "FUNcube-1 (AO-73)",
+        "last_good": "2026-10-24 14:21",
+        "age_h": 4.334853100555556,
+        "stations": 9,
+        "sample": 25,
+        "state": "LIVE",
+        "stale": false,
+        "next_pass": "10-25 20:19 Norfolk - Back Yar",
+        "db_status": "in orbit"
+      },
+      {
+        "norad": 39161,
+        "name": "ESTCube-1",
+        "last_good": "2026-08-18 11:26",
+        "age_h": 1615.2501308783333,
+        "stations": 17,
+        "sample": 25,
+        "state": "SILENT",
+        "stale": true,
+        "db_status": "in orbit"
+      },
+      {
+        "norad": 40931,
+        "name": "LAPAN-A2 (IO-86)",
+        "last_good": "2026-10-24 08:37",
+        "age_h": 10.060408656111111,
+        "stations": 4,
+        "sample": 25,
+        "state": "LIVE",
+        "stale": false,
+        "db_status": "in orbit"
+      },
+      {
+        "norad": 40069,
+        "name": "METEOR M-2",
+        "last_good": "2026-10-22 08:52",
+        "age_h": 57.814297545,
+        "stations": 7,
+        "sample": 25,
+        "state": "LIVE",
+        "stale": true,
+        "next_pass": "10-25 19:27 JF6FYI Nishikazu, ",
+        "db_status": "in orbit"
+      },
+      {
+        "norad": 7530,
+        "name": "OSCAR 7 (AO-7)",
+        "last_good": "2026-10-24 00:26",
+        "age_h": 18.244575322777777,
+        "stations": 8,
+        "sample": 25,
+        "state": "LIVE",
+        "stale": false,
+        "db_status": "in orbit"
+      },
+      {
+        "norad": 24278,
+        "name": "JAS-2 (FO-29)",
+        "last_good": "2026-10-24 17:23",
+        "age_h": 1.2970753227777778,
+        "stations": 8,
+        "sample": 25,
+        "state": "LIVE",
+        "stale": false,
+        "db_status": "in orbit"
+      }
+    ]
+  },
+  "debris": {
+    "status": "ok",
+    "in_orbit": 35076,
+    "active_payloads": 17285,
+    "by_type": {
+      "PAY": 20185,
+      "R/B": 2297,
+      "DEB": 12539,
+      "UNK": 55
+    },
+    "over_the_line": [
+      "1150-1200",
+      "1400-1450",
+      "1450-1500",
+      "1500-1550",
+      "1550-1600"
+    ],
+    "top": [
+      {
+        "shell": "1400-1450",
+        "objects": 459,
+        "index": 1.8231675000270524,
+        "band": "OVER THE LINE"
+      },
+      {
+        "shell": "1450-1500",
+        "objects": 500,
+        "index": 1.53666660334276,
+        "band": "OVER THE LINE"
+      },
+      {
+        "shell": "1550-1600",
+        "objects": 224,
+        "index": 1.3429508278771383,
+        "band": "OVER THE LINE"
+      },
+      {
+        "shell": "1150-1200",
+        "objects": 577,
+        "index": 1.2248586283326985,
+        "band": "OVER THE LINE"
+      },
+      {
+        "shell": "1500-1550",
+        "objects": 271,
+        "index": 1.1808306400941728,
+        "band": "OVER THE LINE"
+      }
+    ]
+  },
+  "prev_stamp": "2026-10-24_0941",
+  "changes": [],
+  "headline": "No change since last report. Apophis EXCLUDED (orbit 220, Lisbon IMPOSSIBLE, JPL vs ESA CONSISTENT); satellites 5/7 fresh; 5 debris shells over the line."
+}

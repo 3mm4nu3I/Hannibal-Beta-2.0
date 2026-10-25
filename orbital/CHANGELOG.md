@@ -3,6 +3,72 @@
 Newest first. What changed, why, what was verified, and what was not.
 Telemetry 1.1.0 / 1.2.0 detail: [CHANGELOG_telemetry.md](CHANGELOG_telemetry.md).
 
+## [2026-10-24, night] Pre-registered C9: brightness against prediction ("the rock gets bigger")
+
+### Added
+- **`hannibal_photometry_check.py`** (proposed by the investigators). Compares your measured magnitudes with JPL Horizons' predicted magnitude at the same time and station. It is self-calibrated: each station and band is judged against its own first 3 nights, so H, filter and zero-point offsets cancel. C9 fires on a drift more than 0.3 mag and more than 3 sigma brighter, 2 nights in a row, confirmed by a second station. The script also reports the implied true/predicted distance (5 log10 k = drift) and the phase angle for the hand check.
+- `PREREGISTRATION.md` section 4e, plus C9 in the observing plan and the study report's criteria table.
+- `test_hannibal_photometry_check.py`: constant offsets cancel; the tumbling allowance, the 3-sigma rule, the 2-night rule and the 2-station rule each block a false fire; too few nights never fires.
+
+### Limits (written into the pre-registration)
+- Far from Earth, a realistic change of path barely changes the distance, so C9 is sensitive mainly in the final days. Position measurements catch a change much earlier. C9 is an independent cross-check that needs no orbit model.
+
+## [2026-10-23, after midnight] Hypothesis H-A (C6 to C8), observing plan, O-C checker
+
+### Added
+- **C6 unexplained push** in `hannibal_crosscheck.py`: JPL's non-gravitational terms (SBDB `model_pars`, full precision) against the solution-220 baseline (A2 = -2.9018e-14 +/- 1.9e-16 au/d^2), radial or out-of-plane terms significant beyond 3 sigma, and JPL against ESA's own Yarkovsky term (`.ke1`). Every concern line now names its criterion (C1 to C6). Live: JPL -2.9018e-14, ESA -2.9001e-14, 0.06 sigma apart.
+- `PREREGISTRATION.md` section 4b: the named hypothesis H-A (artificial or controlled), with predictions C6 (automatic), C7 (radio, manual) and C8 (behaviour and close-up imaging, manual), and what refutes it.
+- **`hannibal_obsplan.py`**: remote-telescope plan per MPC code (LCO 1 m and 0.4 m, iTelescope), counting nights that are dark, above 30 deg and away from the Moon. Gives the integration time for astrometry (SNR 10) and photometry (SNR 50) and the trail-limited sub-exposure. `docs/investigation/apophis/OBSERVING_PLAN.md` + `observing_plan.json`.
+- **`hannibal_astrometry_check.py`**: O-C of your own positions against JPL Horizons at the exact times and station, with combined sigmas, tracklet means and a clock-error hint for along-track offsets. A single point never raises a flag.
+- `test_hannibal_obsplan_astrometry.py`; `test_hannibal_crosscheck.py` extended with the C6 triggers.
+
+### Verified
+- O-C of JPL's own positions comes out at 0.00"; an injected 1.5" along-track offset is flagged with the 28 s clock error that explains it.
+- All orbital tests pass.
+
+## [2026-10-23, late night] Independent cross-check: NASA/JPL vs ESA NEOCC, with an evidence trail
+
+### Why
+To decide whether there's real reason for concern about Apophis, one source asked many times isn't enough. ESA's NEO Coordination Centre fits its own orbit with its own software, so agreement between ESA and JPL is much stronger evidence.
+
+### Added
+- **`hannibal_crosscheck.py`** (`python hannibal_crosscheck.py 99942 --evidence DIR`). Fetches JPL's close approaches, Sentry and SBDB, and ESA's `.clolin` close approaches, risk list and observation file, all live: no cache, no stale fallback. Every raw reply gets a SHA-256 hash, and small replies are saved verbatim with `SHA256SUMS` and `manifest.json`. Passes are matched across agencies (JPL TDB converted to UTC). Each pass is AGREE when the two distances are within 3 combined sigma. Verdict: CONSISTENT, CONCERN (risk-list listing, a minimum distance inside Earth + 100 km, or a 3-sigma disagreement where the window is smaller than the distance), or NO DATA.
+- `test_hannibal_crosscheck.py` (offline, trimmed real JPL/ESA replies). Every concern trigger is tested on its own, as is the rule that no data never becomes an all-clear, and that the evidence hashes match the saved bytes.
+- `docs/investigation/apophis/PREREGISTRATION.md`: the question, the baseline, criteria C1 to C5 fixed in advance, what would refute the concern, and what to do if a criterion fires. `seal.py` is a commit-reveal hash, so a hypothesis can be registered now and revealed later.
+- Daily brief: new section 1b (JPL vs ESA), evidence saved per run to `docs/investigation/apophis/evidence/<stamp>/`. C1 to C5 raise alerts.
+
+### Verified (live, 23 Oct 2026)
+- 2029: JPL 38,011 km vs ESA 38,014 km, 2.3 km apart = 1.4 sigma: AGREE. Both agencies put closest approach at the same minute, 21:45 UTC (21:44:50 vs 21:45:03).
+- All nine shared passes to 2116 AGREE. ESA lists three distant passes (2109 twice, 2124, 18 to 27 million km) that JPL's close-approach list doesn't have; these are shown as "ESA only".
+- Neither risk list carries Apophis. Both have the last observation on 2022-04-09.
+
+## [2026-10-23, night] `[L]` Where it will be: flyby track, 3-sigma envelope, impact-off-Lisbon test
+
+### Why
+`[W]` says where an asteroid won't be (Earth). The other half: where it will be, minute by minute, how sure JPL is at each pass, and a test that can prove a specific impact impossible. The test case is an impact in the Atlantic off Lisbon.
+
+### Added
+- **`hannibal_neo_where.py` + `[L] Where it will be`** (also `python hannibal_orbital.py --neo-where 99942` or `python hannibal_neo_where.py 99942 --target LAT LON NAME`). Uses NASA/JPL Horizons observer tables with 3-sigma covariance (through `hannibal_net`, cached 6 h, no key) plus the `[W]` close-approach list and Sentry status.
+  - TRACK: every minute for 3 h either side of the closest pass. Shows the distance, the point on Earth it is over (sub-point, from Greenwich apparent sidereal time), the magnitude, and the 3-sigma box (along x across the sky, +/- range) in km.
+  - ENVELOPE: the same box at every close approach to 2200.
+  - IMPOSSIBLE-EVENT TEST: a topocentric table for one surface point (default 38.70N 9.60W, off Lisbon) over +/-12 h. Gives the closest approach to the point and the nearest 3-sigma edge. IMPOSSIBLE when that edge stays above the atmosphere. Also reports when the object is above the horizon there and when it is up in a dark sky. If Sentry still lists the object, or Sentry is unreachable, the report says the result covers this flyby only.
+- `test_hannibal_neo_where.py` (offline, trimmed real Horizons tables, fake network).
+
+### Changed
+- `[W]` labels its dates as TDB, which is what JPL's close-approach data uses, and notes the offset. Apophis's "21:46" is 21:46:13 TDB = 21:45:03 UTC.
+
+### Verified (live, 23 Oct 2026, orbit 220)
+- Apophis closest at 21:45 UTC on 13 Apr 2029: 38,015 km from the centre, over 29.0N 43.1W (mid-Atlantic). 3-sigma box 2.5 x 1.7 km, +/-3.3 km.
+- Sub-point check: Horizons, asked for the view from the computed point, puts Apophis at 89.8 deg elevation.
+- Off Lisbon: closest 32,495 km at 21:39 UTC, nearest 3-sigma edge 32,492 km, so 32,392 km above the atmosphere. IMPOSSIBLE. It is up in a dark sky there from 19:41 UTC, peaking at magnitude 2.8.
+- Envelope: 2051 box 221,280 x 49 km (+/-237,314); 2102 1.9 million x 207 km; 2116 10.3 million km (rough).
+- All orbital tests pass.
+
+### Not done / limits
+- The boxes are Horizons' linearised covariance, which can't be trusted for the 2116 pass (marked ~rough). For that pass Sentry decides.
+- UT1-UTC is ignored in the sub-point (< 0.004 deg of longitude).
+- Not added to `hannibal_terminal.spec` hidden imports, the same as `[W]` (see the note further down).
+
 ## [2026-10-23, later] Moonbounce: choose dish or Yagi, band-aware noise
 
 ### Why
