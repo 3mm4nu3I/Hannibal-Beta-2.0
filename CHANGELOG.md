@@ -3,6 +3,14 @@
 Newest first. Each entry says what changed, why, and what was and was not verified.
 Per-module detail lives next to the module (e.g. orbital/CHANGELOG_telemetry.md).
 
+## 2026-10-26 — Release polish: Soyuz banner, roadmap status, release notes (documentation only)
+- Backup first: branch `backup/main-2026-10-26-pre-release` (main at 832fa4d).
+- README: a Soyuz launch banner (also in `docs/SOYUZ_BANNER.txt`), same Soviet-themed ASCII spirit as the terminal's own art. No code changed.
+- `ROADMAP.md`: new dated status section (what has landed since 11 Oct, what is still open, taken from the README's limitations). The stage table is untouched.
+- `docs/RELEASE_NOTES_2026-10-26.md`: the notes used for the GitHub release, with the verification result and the asset checksums.
+- `docs/author/`: the author's one-page CV, public edition (no phone number).
+- Re-verified before release: all 8 offline test files pass (`orbital/test_hannibal_neo.py`, `_zombie`, `_kessler`, `_eme` (14 tests), `_altguard` (5 tests), `test_hannibal_subsea_spatial.py`, `test_volcano_anomaly.py`, `run_evidence_confidence_fixtures.py`). Not re-verified: live endpoints, which depend on keys and network and were last exercised on 22–23 Oct.
+
 ## 2026-10-25 — Whitepaper README (documentation only)
 - New root `README.md`: executive summary, design principles, architecture, capability table with the method behind each module, security and integrity, the 22–23 Oct mission as a case study, how to run, verification, limitations, and how the project is built. Written for technical reviewers; every figure is taken from `calcs.json`, the module docstrings or this changelog.
 - Checked while writing it: all 7 offline test suites pass. `MANIFEST_SHA256.json`'s two `.bat` hashes match the LF form of the files (a git checkout gives CRLF), and its three `core/` entries are not in this repository. V10/V11 need the full portable package. Both points are listed under Limitations. No code changed.

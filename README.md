@@ -1,3 +1,28 @@
+```
+                               /\
+                               ||
+                              /||\
+                              /  \
+                             /    \
+                             |    |
+                 |X|         |----|          |X|
+                 |-|         |    |          |-|
+                 |X|         |CCCP|          |X|
+                 |-|      /| |    | |\       |-|
+                 |X|     / |/======\| \      |X|
+                 |-|    /  ||      ||  \     |-|
+                 |X|    |  ||      ||  |     |X|
+                 |-|    |  ||      ||  |     |-|
+                 |X|    | o||    ..||  |:    |X|
+                 |-|    |__||.     ||__|     |-|
+                 |X|    /__\/__||__\/__\     |X|
+#===#===#===#===#===#===#'|'#=`V|W.=#'|'#===#===#===#===#===#===
+                          W    'W.    W
+                                v
+
+  П О Е Х А Л И !   //   Hannibal ad portas   //   receive-only, since 2026
+```
+
 # PROJECT HANNIBAL
 
 **A receive-only, open-data intelligence terminal in Python.** Hannibal reads public sources
@@ -191,6 +216,7 @@ hannibal_terminal.py            market / OSINT terminal (current)
 orbital/                        Orbital Directorate: every space module, its tests, launchers, README
 docs/reports/                   mission reports with their data and build scripts
 docs/changelogs/, docs/roadmap/ release notes and roadmap PDFs
+docs/RELEASE_NOTES_*.md         notes for each GitHub release; docs/author/ the author's CV (public edition)
 CHANGELOG.md, ROADMAP.md        what changed (and what was verified); where it is going
 VolcanoLlamaNapalm.py           the base engine the terminal was merged from (its anomaly block is tested)
 *.pre_*, *_hardened.py          earlier iterations of the terminal, kept for history

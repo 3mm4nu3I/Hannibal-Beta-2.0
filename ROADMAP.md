@@ -84,3 +84,11 @@ REAL SOURCES
 
 ## Validation boundary
 Live endpoints, credentials, real topology data and aligned historical training data were not supplied. Generated modules were syntax-checked, but live operation and fitted forecast performance are not claimed.
+
+## Status 2026-10-26 (release polish)
+The stage table above is as of 2026-10-11 and is left as it was. Since then:
+- **Landed:** `[W]` where-it-won't-be (impact exclusion, defers to JPL Sentry), `[D]` debris cascade with sensitivity, `[Z]` zombie-satellite check, `[E]` moonbounce link budgets for dishes and Yagi arrays, the 22–23 Oct mission report, the whitepaper README, and the merge that put the laptop's running copy and `main` back in step.
+- **Open (from README section 8):** the two terminals still need reconciling into one (item 7 above); the portable V10/V11 builds import a `core/` folder that is not in this repository; two `.bat` hashes in `MANIFEST_SHA256.json` match only the LF form of the files; production calibration (stage 10) has not started.
+- **Hardware, planned:** a receive-only dish. The `[E]` link budgets are the planning tool for it. Nothing in the repository claims a dish exists yet.
+- **Next run on the laptop:** the NORMAL / LOW INTERNET launchers and the `.exe` rebuild (item 1 above) are still to be confirmed on Windows.
+
