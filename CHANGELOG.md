@@ -3,6 +3,10 @@
 Newest first. Each entry says what changed, why, and what was and was not verified.
 Per-module detail lives next to the module (e.g. orbital/CHANGELOG_telemetry.md).
 
+## 2026-10-25 — Whitepaper README (documentation only)
+- New root `README.md`: executive summary, design principles, architecture, capability table with the method behind each module, security and integrity, the 22–23 Oct mission as a case study, how to run, verification, limitations, and how the project is built. Written for technical reviewers; every figure is taken from `calcs.json`, the module docstrings or this changelog.
+- Checked while writing it: all 7 offline test suites pass. `MANIFEST_SHA256.json`'s two `.bat` hashes match the LF form of the files (a git checkout gives CRLF), and its three `core/` entries are not in this repository. V10/V11 need the full portable package. Both points are listed under Limitations. No code changed.
+
 ## 2026-10-23 (evening) — Mission report and debrief (PDF)
 - `docs/reports/2026-10-23_mission-report/`: a 9-page PDF report of the two days (timeline with worked intervals, method, results, ERS 15 profile and reception history, Apophis, moonbounce, Voyager 1 link budget, Belgian receive-only rules, next steps, sources), with the scripts and data that build it.
 - New figures gathered for it: ERS 15 has 632 vetted good SatNOGS observations since 21 Oct 2020 by at least 96 stations, heard on 31.0% of vetted passes over the last 365 days (95% range 25.4–37.3%). Voyager 1 is 172.69 au away (23 Oct 16:00 UT, JPL Horizons), 23 h 56 min one-way; the free-space formula reproduces JPL's published Voyager design table to 0.01 dB.
